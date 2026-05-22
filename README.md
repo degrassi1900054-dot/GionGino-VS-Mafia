@@ -113,7 +113,7 @@ John smantella i clan minori e arriva finalmente al vertice. Viene condotto al c
 - **Logic & Tools**: .
 - **Database**: MySQL.
 - **Infrastructure**: .
-- **Collaboration**: Git/GitHub, Trello, Discord.
+- **Collaboration**: Git/GitHub, Discord.
 
 ---
 
