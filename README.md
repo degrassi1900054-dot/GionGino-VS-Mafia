@@ -132,5 +132,5 @@ Andrea Kratos verde, Andrea
 
 
 ## 10. Licenza e Copyright  
-© 2024 Istituto Meschini. Tutti i diritti riservati.
+
 
