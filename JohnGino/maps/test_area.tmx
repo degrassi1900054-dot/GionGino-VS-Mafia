@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="12" tilewidth="64" tileheight="64" infinite="0" nextlayerid="3" nextobjectid="19">
+ <tileset firstgid="1" source="Concrete_Tileset_64x.tsx"/>
+ <layer id="1" name="Tiles1" width="20" height="12">
+  <data encoding="csv">
+5,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,6,
+9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,
+9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,
+9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,19,20,21,7,
+11,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,
+8,9,0,0,0,0,0,0,0,0,0,0,0,19,21,0,0,0,0,7,
+8,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,
+8,9,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,7,
+8,11,2,2,2,2,2,2,2,2,2,17,2,2,2,2,2,2,2,12,
+8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
+8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
+8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8
+</data>
+ </layer>
+ <objectgroup id="2" name="Objects1">
+  <object id="3" name="Piattaforma_Bassa" x="832.25" y="328.5" width="127" height="55"/>
+  <object id="4" name="PIattaforma_Alta" x="1023.75" y="201.25" width="192.5" height="54.5"/>
+  <object id="6" name="Scalino" x="703.818" y="456.545" width="63.8182" height="65.91"/>
+  <object id="9" name="Muro" x="63.6667" y="265.333" width="63" height="264.333"/>
+  <object id="10" name="Terreno" x="127.5" y="522" width="1100.5" height="54"/>
+  <object id="12" name="Boundary_D" x="1215" y="1" width="65" height="763"/>
+  <object id="13" name="Boundary_S" x="1" y="11" width="58" height="754"/>
+  <object id="14" name="Soffitto" x="64" y="1" width="1200" height="58"/>
+  <object id="16" name="Pointer_P" type="Player" x="319.333" y="446.667">
+   <point/>
+  </object>
+  <object id="17" name="Pointer_E" type="Enemy" x="1109.33" y="446">
+   <point/>
+  </object>
+ </objectgroup>
+</map>
