@@ -1,0 +1,796 @@
+import pygame
+import sys
+import random
+import math
+
+# Inizializzazione 
+pygame.init()
+
+# Dimensioni - HD
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Napoli 1940")
+
+clock = pygame.time.Clock()
+FPS = 60
+
+# Font
+try:
+    font_title = pygame.font.SysFont("georgia", 50, bold=True)
+    font_subtitle = pygame.font.SysFont("georgia", 22, italic=True)
+    font_sign = pygame.font.SysFont("serif", 24, bold=True)
+    font_ui = pygame.font.SysFont("sans", 18, bold=True)
+    font_crate = pygame.font.SysFont("serif", 12, bold=True)
+except:
+    font_title = pygame.font.Font(None, 60)
+    font_subtitle = pygame.font.Font(None, 28)
+    font_sign = pygame.font.Font(None, 26)
+    font_ui = pygame.font.Font(None, 20)
+    font_crate = pygame.font.Font(None, 14)
+
+LEVELS = {
+    1: {
+        "name": "1. IL PORTO",
+        "sky": (210, 195, 180),  # Cielo
+        "bg_color": (130, 120, 130),  # Navi
+        "fg_color": (85, 75, 90),  # Magazzini e moli
+        "ground": (45, 42, 50),  # Banchina in pietra
+        "particle_type": "water",  # Acqua salsa
+        "pizzeria_suffix": "al Porto",
+        "boss": "NOME BOSS"
+    },
+    2: {
+        "name": "2. IL MERCATO",
+        "sky": (245, 215, 170),  # Pomeriggio
+        "bg_color": (180, 140, 110),  # Palazzi sfondo
+        "fg_color": (130, 90, 70),  # Bancarelle e facciate
+        "ground": (85, 75, 65),  # Ciottoli
+        "particle_type": "dust",  # Polvere nell'aria
+        "pizzeria_suffix": "del Mercato",
+        "boss": "NOME BOSS"
+    },
+    3: {
+        "name": "3. IL CANTIERE",
+        "sky": (195, 180, 165),  # Mattinata  
+        "bg_color": (130, 115, 105),  # Scheletri di palazzi sullo sfondo
+        "fg_color": (110, 95, 80),  # Impalcature traballanti
+        "ground": (65, 60, 55),  # Fango, ghiaia e calcinacci
+        "particle_type": "sparks",  # Scintille e polvere di cemento
+        "pizzeria_suffix": "Cantiere",
+        "boss": "NOME BOSS"
+    },
+    4: {
+        "name": "4. LA FABBRICA",
+        "sky": (110, 105, 105),  # Cielo 
+        "bg_color": (75, 70, 75),  # Ciminiere e silos
+        "fg_color": (50, 45, 55),  # Strutture metalliche e mattoni scuri
+        "ground": (35, 33, 38),  # Cemento coperto di fuliggine
+        "particle_type": "smoke",  # Fuliggine e fumo denso
+        "pizzeria_suffix": "dell'Operaio",
+        "boss": "NOME BOSS"
+    },
+    5: {
+        "name": "5. LE FOGNE",
+        "sky": (12, 10, 15),  # Soffitto buio 
+        "bg_color": (25, 20, 30),  # Archi gotici in pietra 
+        "fg_color": (22, 28, 25),  # Condotto di ghisa e melma tossica
+        "ground": (10, 12, 11),  # Canale di scolo
+        "particle_type": "drip",  # Gocciolamento d'acqua costante
+        "pizzeria_suffix": "Clandestina",
+        "boss": "NOME BOSS"  
+    },
+    6: {
+        "name": "6. VIA SPACCANAPOLI",
+        "sky": (200, 150, 140),  # Tramonto 
+        "bg_color": (135, 95, 80),  # Palazzi altissimi vicini tra loro
+        "fg_color": (90, 50, 45),  # Botteghe storiche e panni stesi
+        "ground": (50, 45, 45),  # Pietra stradale
+        "particle_type": "leaves",  # Cenere vulcanica e foglie 
+        "pizzeria_suffix": "da Spagnuolo",
+        "boss": "NOME BOSS "
+    },
+    7: {
+        "name": "7. LA VILLA DEL BOSS",
+        "sky": (15, 12, 25),  # Notte 
+        "bg_color": (32, 25, 45),  # Profili e pini marittimi
+        "fg_color": (140, 115, 80),  # Marmo dorato e colonne barocche
+        "ground": (28, 22, 35),  # Vialetto privato 
+        "particle_type": "smoke_gold",  # Fumo di sigaro e polvere dorata
+        "pizzeria_suffix": "Don Carmine",
+        "boss": "Il Capo dei Capi"  # Il Boss finale 
+       }
+  }
+
+# Gioco
+
+current_level_id = 1
+camera_x = 0
+scroll_speed = 8
+transition_alpha = 0
+transitioning = False
+target_level_id = 1
+
+
+class Particle:
+    def __init__(self, level_type):
+        self.reset(level_type, True)
+
+    def reset(self, level_type, init_anywhere=False):
+        self.level_type = level_type
+        self.x = random.randint(0, SCREEN_WIDTH)
+        self.y = random.randint(0, SCREEN_HEIGHT) if init_anywhere else (
+            -10 if level_type not in ["bubbles", "smoke_gold"] else SCREEN_HEIGHT + 10)
+
+        if level_type == "water":  # Schizzi d'acqua
+            self.y = random.randint(520, 720)
+            self.vx = random.uniform(-1, 1)
+            self.vy = random.uniform(-0.5, -2)
+            self.size = random.randint(2, 4)
+            self.color = (180, 205, 225, 130)
+        elif level_type == "dust":  # Polvere
+            self.vx = random.uniform(-0.4, 0.4)
+            self.vy = random.uniform(0.2, 0.7)
+            self.size = random.randint(1, 3)
+            self.color = (255, 225, 170, 95)
+        elif level_type == "smoke":  # Fumo scuro
+            self.vx = random.uniform(-2, -0.5)
+            self.vy = random.uniform(0.8, 1.8)
+            self.size = random.randint(5, 11)
+            self.color = (55, 52, 52, 140)
+        elif level_type == "drip":  # Gocciolamento d'acqua
+            self.vx = random.uniform(-0.1, 0.1)
+            self.vy = random.uniform(4, 8)
+            self.size = random.randint(1, 3)
+            # Acqua sporca
+            self.color = (60, 180, 140, 160)
+        elif level_type == "sparks":  # Scintille
+            self.vx = random.uniform(-2, 2)
+            self.vy = random.uniform(1.5, 4)
+            self.size = random.randint(1, 4)
+            self.color = (255, 140, 35, 210)
+        elif level_type == "leaves":  # Cenere e foglie
+            self.vx = random.uniform(-3, -1)
+            self.vy = random.uniform(0.4, 1.4)
+            self.size = random.randint(2, 6)
+            self.color = (115, 75, 55, 130)
+        elif level_type == "smoke_gold":  # Fumo di sigaro e polvere dorata
+            self.y = random.randint(150, 600) if init_anywhere else SCREEN_HEIGHT - 100
+            self.vx = random.uniform(-0.6, 0.6)
+            self.vy = random.uniform(-0.4, -1.2)
+            self.size = random.randint(2, 7)
+            if random.random() < 0.35:
+                self.color = (225, 185, 65, 170)  # Oro
+            else:
+                self.color = (170, 170, 180, 75)  # Fumo grigio
+
+        # Frame ottimizzato
+        self.surf = pygame.Surface((self.size * 2, self.size * 2), pygame.SRCALPHA)
+        pygame.draw.circle(self.surf, self.color, (self.size, self.size), self.size)
+
+    def update(self, cam_delta):
+        self.x -= cam_delta * 0.8  # Effetto vento
+        self.x += self.vx
+        self.y += self.vy
+
+        if (self.y > SCREEN_HEIGHT + 20 or self.y < -20 or
+                self.x < -20 or self.x > SCREEN_WIDTH + 20):
+            self.reset(self.level_type)
+
+    def draw(self, surface):
+        surface.blit(self.surf, (int(self.x - self.size), int(self.y - self.size)))
+
+
+# Particelle - 80
+particles = [Particle(LEVELS[current_level_id]["particle_type"]) for _ in range(80)]
+
+level_structures = {}
+
+
+def build_scenario_for_level(lvl_id):
+    random.seed(lvl_id * 105)  # Rigenerazione
+    structures = []
+    current_x = -3000  # Mappa da sinistra a destra
+    end_x = 6000
+
+    while current_x < end_x:
+        width = random.randint(200, 380)
+        height = random.randint(220, 500)
+
+        # Tipo di struttura:
+        # 1 = Edificio / Villa
+        # 2 = Pizzeria / Ufficio del Boss
+        # 3 = Elemento speciale (Nave, Cantiere abusivo, Casse di contrabbando)
+        rand_val = random.random()
+        if rand_val < 0.22:
+            struct_type = 2  # Pizzeria / Edificio chiave
+        elif rand_val < 0.48:
+            struct_type = 3  # Struttura speciale del livello
+        else:
+            struct_type = 1  # Struttura standard
+
+        structures.append({
+            "x": current_x,
+            "width": width,
+            "height": height,
+            "type": struct_type,
+            "color_offset": random.randint(-15, 15),
+            "detail_seed": random.randint(0, 1000)
+        })
+        current_x += width - random.randint(0, 20)
+    return structures
+
+
+# Generazione scenari
+for i in range(1, 8):
+    level_structures[i] = build_scenario_for_level(i)
+
+
+def draw_background_skyline(surface, lvl_id, cam_x):
+    level = LEVELS[lvl_id]
+    color = level["bg_color"]
+
+    if lvl_id == 1:
+        v_px = -(cam_x * 0.08) % 2000
+        for i in range(-1, 2):
+            base_x = v_px + (i * 2000) + 150
+            points = [
+                (base_x, 500),
+                (base_x + 350, 320),
+                (base_x + 500, 350),
+                (base_x + 650, 290),
+                (base_x + 700, 290),
+                (base_x + 1100, 500)
+            ]
+            pygame.draw.polygon(surface, color, points)
+
+    elif lvl_id == 3:
+        v_px = -(cam_x * 0.1) % 1200
+        for i in range(-1, 3):
+            base_x = v_px + (i * 1200) + 200
+            pygame.draw.rect(surface, color, (base_x, 100, 60, 400))
+            pygame.draw.rect(surface, color, (base_x + 150, 180, 80, 320))
+            pygame.draw.circle(surface, color, (base_x + 30, 100), 20)
+            pygame.draw.circle(surface, color, (base_x + 190, 180), 25)
+
+    elif lvl_id == 4:
+        v_px = -(cam_x * 0.12) % 1000
+        for i in range(-1, 3):
+            base_x = v_px + (i * 1000)
+            pygame.draw.arc(surface, color, (base_x, 80, 600, 620), 0, math.pi, 8)
+            pygame.draw.line(surface, color, (base_x + 300, 80), (base_x + 300, 500), 2)
+
+    elif lvl_id == 5:
+        v_px = -(cam_x * 0.1) % 1400
+        for i in range(-1, 2):
+            base_x = v_px + (i * 1400) + 100
+            pygame.draw.rect(surface, color, (base_x, 150, 220, 380))
+            pygame.draw.rect(surface, color, (base_x + 280, 220, 180, 310))
+            for wx in range(base_x + 20, base_x + 200, 50):
+                for wy in range(180, 500, 70):
+                    pygame.draw.rect(surface, (level["sky"]), (wx, wy, 25, 35))
+
+    elif lvl_id == 6:
+        v_px = -(cam_x * 0.15) % 1500
+        for i in range(-1, 2):
+            base_x = v_px + (i * 1500) + 400
+            pygame.draw.ellipse(surface, color, (base_x, 200, 120, 150))
+            pygame.draw.rect(surface, color, (base_x + 45, 150, 30, 60))
+            pygame.draw.rect(surface, color, (base_x - 100, 280, 320, 220))
+
+    elif lvl_id == 7:
+        v_px = -(cam_x * 0.07) % 1600
+        for i in range(-1, 2):
+            base_x = v_px + (i * 1600) + 300
+            pygame.draw.ellipse(surface, color, (base_x - 100, 300, 800, 300))
+            pino_x = base_x + 200
+            pygame.draw.rect(surface, color, (pino_x, 380, 12, 120))
+            pygame.draw.ellipse(surface, color, (pino_x - 45, 330, 100, 60))
+
+
+def draw_rotten_tomato_crates(surface, x, y, seed):
+    """Disegno casse di legno scassate, sporche, con un pomodoro dipinto male e perdite di liquido rosso"""
+    random.seed(seed)
+    num_crates = random.randint(3, 5)
+    for i in range(num_crates):
+        cx = x + (i * 42) + random.randint(-6, 6)
+        cy = y - 28
+
+        # Cassa di legno rovinata
+        crate_col = (105, 80, 60)
+        shadow_col = (65, 48, 35)
+        pygame.draw.rect(surface, crate_col, (cx, cy, 38, 28))
+        pygame.draw.rect(surface, shadow_col, (cx, cy, 38, 28), 2)
+        pygame.draw.line(surface, shadow_col, (cx + 3, cy + 3), (cx + 35, cy + 25), 2)
+
+        # Pomodoro rosso
+        pygame.draw.ellipse(surface, (130, 15, 15), (cx + 3, y - 6, 32, 8))
+        pygame.draw.line(surface, (135, 15, 15), (cx + 12, cy + 12), (cx + 12, y - 2), 2)
+
+        # Disegno del pomodoro sulla cassa
+        pygame.draw.circle(surface, (160, 30, 25), (cx + 19, cy + 14), 7)
+        pygame.draw.polygon(surface, (40, 90, 40), [(cx + 17, cy + 9), (cx + 21, cy + 9), (cx + 19, cy + 6)])
+
+
+def draw_illicit_contraband(surface, x, y, seed):
+    """Disegno casse contrabbando e casse marchiate 'FARINA' mezze spaccate con armi visibili"""
+    random.seed(seed)
+    cx = x + 30
+    cy = y - 40
+    pygame.draw.rect(surface, (95, 90, 85), (cx, cy, 65, 40))
+    pygame.draw.rect(surface, (45, 40, 40), (cx, cy, 65, 40), 2)
+    txt = font_crate.render("FARINA", True, (45, 40, 40))
+    surface.blit(txt, (cx + 6, cy + 6))
+
+    # Armi di contrabbando 
+    pygame.draw.polygon(surface, (20, 20, 20),
+                        [(cx + 25, cy + 20), (cx + 60, cy + 15), (cx + 60, cy + 38), (cx + 35, cy + 38)])
+    pygame.draw.line(surface, (130, 130, 140), (cx + 40, cy + 23), (cx + 78, cy + 8), 4)
+    pygame.draw.line(surface, (75, 45, 35), (cx + 28, cy + 26), (cx + 45, cy + 23), 6)
+    pygame.draw.line(surface, (190, 150, 35), (cx + 48, cy + 23), (cx + 55, cy + 42), 3)
+
+    # Barile
+    bx = x + 110
+    by = y - 55
+    pygame.draw.rect(surface, (30, 40, 30), (bx, by, 30, 55), border_radius=4)
+    pygame.draw.rect(surface, (12, 18, 12), (bx, by, 30, 55), 2, border_radius=4)
+    pygame.draw.line(surface, (12, 18, 12), (bx, by + 18), (bx + 30, by + 18), 2)
+    pygame.draw.line(surface, (12, 18, 12), (bx, by + 36), (bx + 30, by + 36), 2)
+
+
+def draw_pizzeria_sign(surface, x, floor_y, struct, text_str, level):
+    """Disegno insegna vintage"""
+    w, h = struct["width"], struct["height"]
+
+    chimney_x = x + w - 40
+    chimney_y = floor_y - h - 45
+    pygame.draw.rect(surface, (65, 65, 65), (chimney_x, chimney_y, 20, 45))
+    pygame.draw.rect(surface, (110, 28, 18), (chimney_x - 4, chimney_y, 28, 8))
+
+    sign_w = int(w * 0.85)
+    sign_h = 44
+    sign_x = x + (w - sign_w) // 2
+    sign_y = floor_y - 125
+
+    pygame.draw.rect(surface, (130, 30, 20), (sign_x, sign_y, sign_w, sign_h), border_radius=4)
+    pygame.draw.rect(surface, (240, 218, 175), (sign_x + 3, sign_y + 3, sign_w - 6, sign_h - 6), border_radius=4)
+
+    test_font_size = 24
+    max_text_w = sign_w - 20
+
+    current_font = pygame.font.SysFont("serif", test_font_size, bold=True)
+    text_surf = current_font.render(text_str.upper(), True, (90, 20, 12))
+
+    # Adattamento testo-insegna
+    while text_surf.get_width() > max_text_w and test_font_size > 11:
+        test_font_size -= 2
+        current_font = pygame.font.SysFont("serif", test_font_size, bold=True)
+        text_surf = current_font.render(text_str.upper(), True, (90, 20, 12))
+
+    text_x = sign_x + (sign_w - text_surf.get_width()) // 2
+    text_y = sign_y + (sign_h - text_surf.get_height()) // 2
+    surface.blit(text_surf, (text_x, text_y))
+
+    if level in [LEVELS[1], LEVELS[6]]:
+        table_x = x + 30
+        pygame.draw.line(surface, (18, 18, 18), (table_x + 20, floor_y - 25), (table_x + 20, floor_y), 3)
+        pygame.draw.rect(surface, (170, 35, 25), (table_x, floor_y - 28, 40, 8))
+        pygame.draw.rect(surface, (235, 235, 235), (table_x + 10, floor_y - 28, 20, 8))
+
+
+def draw_vintage_building(surface, x, floor_y, struct, color, level, extra_decorations=False):
+    """Costruzione palazzi d'epoca"""
+    w, h = struct["width"], struct["height"]
+    rect = pygame.Rect(x, floor_y - h, w, h)
+
+    pygame.draw.rect(surface, color, rect)
+    pygame.draw.rect(surface, (max(0, color[0] - 25), max(0, color[1] - 25), max(0, color[2] - 25)), rect, 2)
+
+    window_color = (35, 30, 25)
+    win_w, win_h = 16, 28
+    spacing_x = 45
+    spacing_y = 65
+    start_y = rect.y + 40
+
+    for wx in range(rect.x + 25, rect.x + w - 25, spacing_x):
+        for wy in range(start_y, floor_y - 60, spacing_y):
+            pygame.draw.rect(surface, (205, 185, 165), (wx - 3, wy - 5, win_w + 6, win_h + 8))
+            pygame.draw.rect(surface, window_color, (wx, wy, win_w, win_h))
+            pygame.draw.rect(surface, (40, 60, 45), (wx - 6, wy, 6, win_h))
+            pygame.draw.rect(surface, (40, 60, 45), (wx + win_w, wy, 6, win_h))
+
+    if extra_decorations and struct["detail_seed"] % 3 == 0:
+        line_y = rect.y + 110
+        pygame.draw.line(surface, (25, 25, 25), (rect.x, line_y), (rect.x + w, line_y + 8), 1)
+        cloth_colors = [(190, 45, 45), (215, 215, 215), (65, 95, 150), (195, 175, 45)]
+        for cx in range(rect.x + 20, rect.x + w - 20, 30):
+            ccol = cloth_colors[cx % len(cloth_colors)]
+            pygame.draw.rect(surface, ccol, (cx, line_y + 2, 12, 18))
+            pygame.draw.line(surface, (0, 0, 0), (cx, line_y + 1), (cx + 12, line_y + 1), 2)
+
+    door_w, door_h = 45, 65
+    pygame.draw.rect(surface, (55, 35, 25), (rect.x + w // 2 - door_w // 2, floor_y - door_h, door_w, door_h),
+                     border_top_left_radius=20, border_top_right_radius=20)
+    pygame.draw.circle(surface, (190, 160, 45), (rect.x + w // 2 - 10, floor_y - door_h // 2), 3)
+
+    if struct["type"] == 2:
+        pizzeria_names = ["Da Salvatore", "Antica Napoli", "Forno a Legna", "Don Peppino", "La Regina"]
+        name_idx = (struct["detail_seed"]) % len(pizzeria_names)
+        full_name = f"{pizzeria_names[name_idx]} {level['pizzeria_suffix']}"
+        draw_pizzeria_sign(surface, x, floor_y, struct, full_name, level)
+
+
+def draw_industrial_building(surface, x, floor_y, struct, color, level):
+    w, h = struct["width"], struct["height"]
+    rect = pygame.Rect(x, floor_y - h, w, h)
+
+    pygame.draw.rect(surface, color, rect)
+    for ly in range(rect.y + 10, floor_y, 30):
+        pygame.draw.line(surface, (40, 38, 43), (rect.x, ly), (rect.x + w, ly), 1)
+
+    win_size = 32
+    for wx in range(rect.x + 30, rect.x + w - 30, 60):
+        for wy in range(rect.y + 40, floor_y - 80, 80):
+            pygame.draw.rect(surface, (20, 24, 30), (wx, wy, win_size, win_size))
+            pygame.draw.line(surface, (5, 5, 5), (wx + win_size // 2, wy), (wx + win_size // 2, wy + win_size), 2)
+            pygame.draw.line(surface, (5, 5, 5), (wx, wy + win_size // 2), (wx + win_size, wy + win_size // 2), 2)
+
+    door_w, door_h = 80, 70
+    pygame.draw.rect(surface, (35, 38, 40), (rect.x + w // 2 - door_w // 2, floor_y - door_h, door_w, door_h))
+    pygame.draw.rect(surface, (10, 10, 10), (rect.x + w // 2 - door_w // 2, floor_y - door_h, door_w, door_h), 3)
+
+    if struct["type"] == 2:
+        draw_pizzeria_sign(surface, x, floor_y, struct, "VAPORE & PIZZA", level)
+
+
+def draw_boss_mansion(surface, x, floor_y, struct, color, level):
+    """Disegno villa neoclassica"""
+    w, h = struct["width"], int(struct["height"] * 1.1)
+    rect = pygame.Rect(x, floor_y - h, w, h)
+
+    pygame.draw.rect(surface, color, rect)
+    pygame.draw.rect(surface, (80, 65, 40), rect, 3)
+
+    col_w = 20
+    for cx in [rect.x + 15, rect.x + w - 35]:
+        pygame.draw.rect(surface, (220, 205, 170), (cx, rect.y + 10, col_w, h - 10))
+        pygame.draw.rect(surface, (170, 140, 90), (cx - 4, rect.y + 10, col_w + 8, 12))
+        pygame.draw.rect(surface, (170, 140, 90), (cx - 4, floor_y - 12, col_w + 8, 12))
+
+    win_w, win_h = 24, 45
+    for wx in range(rect.x + 55, rect.x + w - 55, 65):
+        for wy in range(rect.y + 50, floor_y - 100, 100):
+            pygame.draw.rect(surface, (240, 205, 100), (wx, wy, win_w, win_h), border_top_left_radius=12,
+                             border_top_right_radius=12)
+            pygame.draw.rect(surface, (45, 35, 15), (wx, wy, win_w, win_h), 2, border_top_left_radius=12,
+                             border_top_right_radius=12)
+            pygame.draw.rect(surface, (110, 15, 15), (wx, wy, 5, win_h))
+            pygame.draw.rect(surface, (110, 15, 15), (wx + win_w - 5, wy, 5, win_h))
+
+    door_w, door_h = 60, 85
+    pygame.draw.rect(surface, (40, 25, 10), (rect.x + w // 2 - door_w // 2, floor_y - door_h, door_w, door_h),
+                     border_top_left_radius=30, border_top_right_radius=30)
+    pygame.draw.rect(surface, (200, 165, 50), (rect.x + w // 2 - door_w // 2, floor_y - door_h, door_w, door_h), 3,
+                     border_top_left_radius=30, border_top_right_radius=30)
+
+    pygame.draw.rect(surface, (90, 85, 80), (rect.x + w // 2 - door_w // 2 - 25, floor_y - 30, 18, 30))
+    pygame.draw.rect(surface, (90, 85, 80), (rect.x + w // 2 + door_w // 2 + 7, floor_y - 30, 18, 30))
+
+    if struct["detail_seed"] % 4 == 0:
+        car_x = rect.x + 30
+        car_y = floor_y - 45
+        pygame.draw.rect(surface, (12, 12, 15), (car_x, car_y, 110, 30), border_radius=6)
+        pygame.draw.ellipse(surface, (12, 12, 15), (car_x + 20, car_y - 18, 65, 25))
+        pygame.draw.circle(surface, (230, 230, 230), (car_x + 25, floor_y - 5), 14)
+        pygame.draw.circle(surface, (8, 8, 10), (car_x + 25, floor_y - 5), 10)
+        pygame.draw.circle(surface, (230, 230, 230), (car_x + 85, floor_y - 5), 14)
+        pygame.draw.circle(surface, (8, 8, 10), (car_x + 85, floor_y - 5), 10)
+        pygame.draw.circle(surface, (250, 230, 140), (car_x + 110, car_y + 12), 4)
+
+    if struct["type"] == 2:
+        draw_pizzeria_sign(surface, x, floor_y, struct, "VILLA DON CARMINE", level)
+        case_x = rect.x + w // 2 + 40
+        pygame.draw.rect(surface, (80, 60, 35), (case_x, floor_y - 22, 28, 14))
+        pygame.draw.rect(surface, (200, 165, 50), (case_x + 8, floor_y - 22, 4, 3))
+
+
+def draw_foreground_level(surface, lvl_id, cam_x):
+    level = LEVELS[lvl_id]
+    structs = level_structures[lvl_id]
+
+    floor_y = 580
+    if lvl_id == 4: floor_y = 610
+
+    parallax_factor = 1.0
+    total_world_width = 9000  # Mappa e scorrimento
+
+    for s in structs:
+        screen_x = s["x"] - (cam_x * parallax_factor)
+
+        # Scorrimento continuo
+        while screen_x < -s["width"] - 300:
+            screen_x += total_world_width
+        while screen_x > SCREEN_WIDTH + 300:
+            screen_x -= total_world_width
+
+        # Disegno elementi solo visibili - anti lag
+        if screen_x + s["width"] < -100 or screen_x > SCREEN_WIDTH + 100:
+            continue
+
+        base_col = level["fg_color"]
+        col = (
+            max(0, min(255, base_col[0] + s["color_offset"])),
+            max(0, min(255, base_col[1] + s["color_offset"])),
+            max(0, min(255, base_col[2] + s["color_offset"]))
+        )
+
+        if lvl_id == 1:  
+            if s["type"] == 3:  # Nave cargo a vapore
+                ship_rect = pygame.Rect(screen_x, floor_y - 200, s["width"] + 100, 200)
+
+                # Scafo nero e rosso 
+                pygame.draw.rect(surface, (25, 25, 28), ship_rect, border_top_left_radius=45)
+                pygame.draw.rect(surface, (90, 30, 25), (ship_rect.x, ship_rect.y + 130, ship_rect.width, 70),
+                                 border_top_left_radius=10)
+
+                # Oblò 
+                for ox in range(ship_rect.x + 60, ship_rect.x + ship_rect.width - 40, 45):
+                    pygame.draw.circle(surface, (245, 225, 150), (ox, ship_rect.y + 70), 8)
+                    pygame.draw.circle(surface, (15, 15, 15), (ox, ship_rect.y + 70), 8, 2)
+
+                # Ciminiere 
+                pygame.draw.rect(surface, (150, 45, 35), (ship_rect.x + 80, ship_rect.y - 75, 40, 75))
+                pygame.draw.rect(surface, (15, 15, 15), (ship_rect.x + 80, ship_rect.y - 75, 40, 15))
+                pygame.draw.rect(surface, (150, 45, 35), (ship_rect.x + 190, ship_rect.y - 75, 40, 75))
+                pygame.draw.rect(surface, (15, 15, 15), (ship_rect.x + 190, ship_rect.y - 75, 40, 15))
+
+                # Nome sulla poppa
+                txt = font_ui.render("SS VESUVIO", True, (230, 225, 215))
+                surface.blit(txt, (ship_rect.x + 40, ship_rect.y + 145))
+
+                # Cime di ormeggio 
+                bitta_x = ship_rect.x - 25
+                pygame.draw.rect(surface, (35, 35, 35), (bitta_x, floor_y - 25, 16, 25), border_radius=3)
+                pygame.draw.line(surface, (15, 12, 10), (bitta_x + 8, floor_y - 15),
+                                 (ship_rect.x + 60, ship_rect.y + 120), 3)
+
+                # Casse di pomodoro sporche
+                draw_rotten_tomato_crates(surface, ship_rect.x + ship_rect.width - 50, floor_y, s["detail_seed"])
+            else:
+                draw_vintage_building(surface, screen_x, floor_y, s, col, level)
+                if s["detail_seed"] % 3 == 0:
+                    draw_rotten_tomato_crates(surface, screen_x + 25, floor_y, s["detail_seed"])
+
+        elif lvl_id == 2:  
+            if s["type"] == 3:
+                draw_vintage_building(surface, screen_x, floor_y, s, col, level)
+                stand_x = screen_x + 30
+                stand_y = floor_y - 70
+                pygame.draw.rect(surface, (180, 45, 35), (stand_x, stand_y, 110, 20))
+                pygame.draw.rect(surface, (235, 235, 235), (stand_x + 20, stand_y, 70, 20))
+                pygame.draw.line(surface, (110, 75, 45), (stand_x, stand_y), (stand_x, floor_y), 3)
+                pygame.draw.line(surface, (110, 75, 45), (stand_x + 110, stand_y), (stand_x + 110, floor_y), 3)
+                pygame.draw.ellipse(surface, (150, 55, 45), (stand_x + 10, floor_y - 25, 40, 25))
+                pygame.draw.ellipse(surface, (200, 170, 55), (stand_x + 60, floor_y - 25, 40, 25))
+            else:
+                draw_vintage_building(surface, screen_x, floor_y, s, col, level)
+
+        elif lvl_id == 3:  
+            if s["type"] == 3:
+                silo_w = 120
+                pygame.draw.rect(surface, (50, 50, 55), (screen_x + 30, floor_y - 320, silo_w, 320),
+                                 border_top_left_radius=60, border_top_right_radius=60)
+                pygame.draw.line(surface, (20, 20, 25), (screen_x + 30, floor_y - 160),
+                                 (screen_x + 30 + silo_w, floor_y - 160), 4)
+                pygame.draw.line(surface, (80, 80, 80), (screen_x + 90, floor_y - 320), (screen_x + 150, floor_y - 370),
+                                 8)
+                draw_illicit_contraband(surface, screen_x + 10, floor_y, s["detail_seed"])
+            else:
+                draw_industrial_building(surface, screen_x, floor_y, s, col, level)
+                if s["detail_seed"] % 2 == 0:
+                    draw_illicit_contraband(surface, screen_x + 25, floor_y, s["detail_seed"])
+
+        elif lvl_id == 4:  
+            pygame.draw.rect(surface, (16, 12, 18), (screen_x, floor_y - 320, s["width"], 320))
+
+            for ly in range(floor_y - 300, floor_y, 45):
+                pygame.draw.line(surface, (28, 16, 18), (screen_x, ly), (screen_x + s["width"], ly), 2)
+
+            # Condotto
+            pipe_x = screen_x + s["width"] // 2 - 45
+            pygame.draw.rect(surface, (45, 50, 45), (pipe_x, floor_y - 250, 90, 110), border_radius=15)
+            pygame.draw.circle(surface, (8, 10, 8), (pipe_x + 45, floor_y - 195), 32)
+
+            # Sporco
+            slime_pulse = int(math.sin(pygame.time.get_ticks() * 0.007 + s["detail_seed"]) * 12) + 12
+            pygame.draw.rect(surface, (45, 175, 100), (pipe_x + 25, floor_y - 195, 40, 200 + slime_pulse),
+                             border_radius=6)
+
+            # Muschio
+            pygame.draw.ellipse(surface, (60, 210, 150), (pipe_x - 30, floor_y - 50, 24, 12))
+            pygame.draw.ellipse(surface, (60, 210, 150), (pipe_x + 100, floor_y - 70, 16, 10))
+
+            # Ratti 
+            time_blink = pygame.time.get_ticks() % 3000
+            if time_blink > 350:  
+                eye_color = (255, 30, 30) if s["detail_seed"] % 2 == 0 else (240, 210, 30)
+                # Coppia occhi 1
+                pygame.draw.circle(surface, eye_color, (screen_x + 35, floor_y - 120), 4)
+                pygame.draw.circle(surface, eye_color, (screen_x + 47, floor_y - 120), 4)
+                # Coppia occhi 2 in basso
+                pygame.draw.circle(surface, eye_color, (screen_x + s["width"] - 50, floor_y - 45), 3)
+                pygame.draw.circle(surface, eye_color, (screen_x + s["width"] - 42, floor_y - 45), 3)
+
+            if s["type"] == 2:
+                shelter_w = 190
+                pygame.draw.rect(surface, (40, 25, 20), (screen_x + 10, floor_y - 230, shelter_w, 230),
+                                 border_top_left_radius=70, border_top_right_radius=70)
+                # Forno a legna 
+                pygame.draw.circle(surface, (220, 75, 15), (screen_x + 10 + shelter_w // 2, floor_y - 55), 38)
+                pygame.draw.circle(surface, (250, 170, 30), (screen_x + 10 + shelter_w // 2, floor_y - 50), 24)
+                pygame.draw.rect(surface, (15, 15, 15), (screen_x + 10 + shelter_w // 2 - 45, floor_y - 35, 90, 40))
+                # Insegna
+                draw_pizzeria_sign(surface, screen_x + 10, floor_y, {"width": shelter_w, "height": 230},
+                                   "PIZZA BUIA SOTTO", level)
+
+        elif lvl_id == 5:  
+            w, h = s["width"], s["height"]
+
+            # Strutture
+            pygame.draw.rect(surface, (95, 90, 85), (screen_x, floor_y - h, w, h))
+            pygame.draw.rect(surface, (55, 52, 50), (screen_x, floor_y - h, w, h), 3)
+
+            # Crepe sulla facciata 
+            pygame.draw.line(surface, (45, 42, 40), (screen_x + 40, floor_y - h + 30),
+                             (screen_x + 90, floor_y - h + 120), 3)
+            pygame.draw.line(surface, (45, 42, 40), (screen_x + 90, floor_y - h + 120),
+                             (screen_x + 70, floor_y - h + 190), 2)
+
+            # Tondini di ferro 
+            for rebar_x in range(screen_x + 25, screen_x + w - 10, 45):
+                bend_x = int(math.sin(rebar_x) * 15)
+                pygame.draw.line(surface, (140, 70, 45), (rebar_x, floor_y - h), (rebar_x + bend_x, floor_y - h - 35),
+                                 4)
+                pygame.draw.line(surface, (110, 50, 30), (rebar_x, floor_y - h), (rebar_x + bend_x, floor_y - h - 35),
+                                 1)
+
+            # Impalcature di legno 
+            scaff_x = screen_x - 15
+            pygame.draw.line(surface, (115, 80, 50), (scaff_x, floor_y), (scaff_x, floor_y - h - 15), 6)
+            pygame.draw.line(surface, (115, 80, 50), (screen_x + w + 15, floor_y),
+                             (screen_x + w + 15, floor_y - h - 15), 6)
+            for step_y in range(floor_y - 60, floor_y - h, -80):
+                # Asse orizzontale
+                pygame.draw.line(surface, (115, 80, 50), (scaff_x, step_y), (screen_x + w + 15, step_y), 5)
+                # Sicurezza instabile
+                pygame.draw.line(surface, (85, 55, 30), (scaff_x, step_y), (screen_x + w + 15, step_y - 40), 3)
+                pygame.draw.line(surface, (85, 55, 30), (scaff_x, step_y - 40), (screen_x + w + 15, step_y), 3)
+
+            # Calcinacci
+            pygame.draw.ellipse(surface, (140, 135, 130), (screen_x + 20, floor_y - 18, 35, 18))
+            pygame.draw.ellipse(surface, (120, 115, 110), (screen_x + 45, floor_y - 14, 35, 16))
+            pygame.draw.rect(surface, (150, 85, 55), (screen_x + w - 60, floor_y - 25, 20, 12))
+            pygame.draw.rect(surface, (150, 85, 55), (screen_x + w - 55, floor_y - 37, 20, 12))
+
+            if s["type"] == 2:
+                draw_pizzeria_sign(surface, screen_x, floor_y, s, "PIZZERIA DELL'ABUSO", level)
+                pygame.draw.line(surface, (195, 165, 45), (screen_x - 10, floor_y - 45), (screen_x + 80, floor_y - 15),
+                                 8)
+                pygame.draw.line(surface, (20, 20, 20), (screen_x - 10, floor_y - 45), (screen_x + 80, floor_y - 15), 8,
+                                 2)
+
+        elif lvl_id == 6: 
+            draw_vintage_building(surface, screen_x, floor_y, s, col, level, extra_decorations=True)
+
+        elif lvl_id == 7:  
+            draw_boss_mansion(surface, screen_x, floor_y, s, col, level)
+
+
+running = True
+while running:
+    # Gestione Eventi e tasti-livelli
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7]:
+                new_lvl = int(event.unicode)
+                if new_lvl != current_level_id and not transitioning:
+                    target_level_id = new_lvl
+                    transitioning = True
+
+    # Gestione scorrimento 
+    keys = pygame.key.get_pressed()
+    cam_delta = 0
+    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        cam_delta = -scroll_speed
+    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        cam_delta = scroll_speed
+
+    camera_x += cam_delta
+
+    # Aggiornamento particelle
+    current_ptype = LEVELS[current_level_id]["particle_type"]
+    for p in particles:
+        p.update(cam_delta)
+
+    # Livello attuale
+    current_level = LEVELS[current_level_id]
+    screen.fill(current_level["sky"])
+
+    # Base del terreno 
+    if current_level_id in [1]:  
+        pygame.draw.rect(screen, (60, 75, 95), (0, 480, SCREEN_WIDTH, 240))
+        for oy in range(500, 580, 20):
+            pygame.draw.line(screen, (80, 95, 115), (0, oy), (SCREEN_WIDTH, oy), 2)
+    elif current_level_id == 4:  # Canale d'acqua
+        pygame.draw.rect(screen, (8, 16, 12), (0, 500, SCREEN_WIDTH, 220))
+        # Onde di scarico verdi
+        for oy in range(520, 610, 30):
+            pygame.draw.line(screen, (15, 36, 22), (0, oy), (SCREEN_WIDTH, oy), 3)
+
+    # Sfondo 
+    draw_background_skyline(screen, current_level_id, camera_x)
+
+    # Primo Piano 
+    draw_foreground_level(screen, current_level_id, camera_x)
+
+    # Pavimento stradale
+    ground_y = 580
+    if current_level_id == 4: ground_y = 610
+    pygame.draw.rect(screen, current_level["ground"], (0, ground_y, SCREEN_WIDTH, SCREEN_HEIGHT - ground_y))
+    pygame.draw.line(screen, (15, 12, 10), (0, ground_y), (SCREEN_WIDTH, ground_y), 4)
+
+    # Pietra 
+    if current_level_id in [6, 7]:
+        grid_col = (35, 30, 28) if current_level_id == 6 else (45, 35, 50)
+        for cx in range(-int(camera_x) % 120, SCREEN_WIDTH + 120, 120):
+            pygame.draw.line(screen, grid_col, (cx, ground_y), (cx - 40, SCREEN_HEIGHT), 2)
+
+    # Disegno delle Particelle e anti-lag
+    for p in particles:
+        p.draw(screen)
+
+    # Scena
+    if transitioning:
+        transition_alpha += 15
+        if transition_alpha >= 255:
+            transition_alpha = 255
+            current_level_id = target_level_id
+            new_ptype = LEVELS[current_level_id]["particle_type"]
+            for p in particles:
+                p.reset(new_ptype, init_anywhere=True)
+            transitioning = False
+    else:
+        if transition_alpha > 0:
+            transition_alpha -= 15
+            if transition_alpha < 0: transition_alpha = 0
+
+    # Transizione cinematografica
+    if transition_alpha > 0:
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.fill((12, 10, 8))
+        overlay.set_alpha(transition_alpha)
+        screen.blit(overlay, (0, 0))
+
+        if transition_alpha > 180:
+            lvl_title = font_title.render(LEVELS[target_level_id]["name"], True, (240, 215, 175))
+            screen.blit(lvl_title, (SCREEN_WIDTH // 2 - lvl_title.get_width() // 2, SCREEN_HEIGHT // 2 - 40))
+
+            sub_title = font_subtitle.render("Napoli - Anno 1946", True, (170, 135, 105))
+            screen.blit(sub_title, (SCREEN_WIDTH // 2 - sub_title.get_width() // 2, SCREEN_HEIGHT // 2 + 25))
+
+    # UI
+    pygame.draw.rect(screen, (240, 230, 215), (15, 15, SCREEN_WIDTH - 30, 48), border_radius=6)
+    pygame.draw.rect(screen, (90, 75, 65), (15, 15, SCREEN_WIDTH - 30, 48), 2, border_radius=6)
+
+    ui_text = font_ui.render(
+        f"ZONA ATTUALE: {LEVELS[current_level_id]['name']} | [FRECCE/WASD] Esplora | Tasti [1-7] Cambia Zona", True,
+        (55, 35, 25))
+    screen.blit(ui_text, (35, 28))
+
+    pygame.display.flip()
+    clock.tick(FPS)
+
+pygame.quit()
+sys.exit()
