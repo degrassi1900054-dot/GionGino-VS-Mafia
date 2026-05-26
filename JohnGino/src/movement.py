@@ -1,15 +1,11 @@
-import pygame
-import threading
-import time 
-import math
-import os
-from pathlib import Path
+from pygame import key
+from utility import * 
+from levelLoader import *
+
 pygame.init()
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+
 #Path dell drectory di base del Gioco
-GamePath = str(Path(os.path.dirname(__file__)).parent.absolute())
 clock = pygame.time.Clock()
 
 # --- Sfondo a scorrimento orizzontale ---
@@ -21,12 +17,14 @@ sfondo = pygame.transform.scale(sfondo_originale, (SFONDO_W, SFONDO_H))
 
 # Posizione del giocatore nel mondo (coordinate mondo)
 player_pos = pygame.Vector2(SFONDO_W / 2, SCREEN_HEIGHT / 2)
+
 GroundY = player_pos.y
 
+loadLevel("test")
 # Offset della telecamera: il personaggio appare a 1/4 dallo schermo sinistro
 CAMERA_OFFSET_X = SCREEN_WIDTH // 4  # ~320px dal bordo sinistro
-dt = 0
 running = True
+    
 playerJumping = False
 onGround = True
 MaxJumpForce = 200
@@ -53,8 +51,9 @@ def jump():
     global Falling
     global GravityForce
     global player_pos
-    while running:
-        if playerJumping == True and JumpDuration > 0:
+    global dt
+    while True:
+        if playerJumping and JumpDuration > 0:
             onGround = False
             player_pos.y -= math.floor(JumpForce * dt) 
             JumpDuration -= 1 
@@ -79,9 +78,10 @@ def fall():
     global GroundY
     global player_pos
     global GravityForce
-    while running:
+    global dt
+    while True:
         time.sleep(0.01)
-        if Falling == True and GroundY > player_pos.y:
+        if Falling and GroundY > player_pos.y:
             player_pos.y += math.floor(GravityForce * dt)
             GravityForce += 10
         elif GroundY == PhysicsNormalizer(player_pos.y):
@@ -136,70 +136,22 @@ frames_jump_dx = [pygame.transform.flip(f, True, False) for f in frames_jump_sx]
 
 anim_index = 0
 direzione = "destra" # Direzione iniziale
-
-#sezione "update"
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-    # --- Calcolo posizione telecamera ---
-    # La telecamera cerca di posizionare il giocatore a CAMERA_OFFSET_X dal bordo sinistro
-    camera_x = player_pos.x - CAMERA_OFFSET_X
-    
-    # Limita la telecamera ai bordi dello sfondo
-    camera_x = max(0, camera_x)                         # Non andare oltre il bordo sinistro
-    camera_x = min(camera_x, SFONDO_W - SCREEN_WIDTH)   # Non andare oltre il bordo destro
-    
-    # Disegna lo sfondo con offset della telecamera
-    screen.blit(sfondo, (-camera_x, 0))
-
-    keys = pygame.key.get_pressed()
-
-    # Determina la direzione del giocatore
-    if keys[pygame.K_d]:
-        direzione = "destra"
-    elif keys[pygame.K_a]:
-        direzione = "sinistra"
-
-    # Seleziona l'animazione corretta
-    if not onGround:
-        lista_corrente = frames_jump_dx if direzione == "destra" else frames_jump_sx
-    elif keys[pygame.K_d]:
-        lista_corrente = frames_walk_dx
-    elif keys[pygame.K_a]:
-        lista_corrente = frames_walk_sx
-    else:
-        lista_corrente = frames_idle_dx if direzione == "destra" else frames_idle_sx
-
-    # Previene errori se l'indice precedente supera la lunghezza della nuova lista di frame
-    if anim_index >= len(lista_corrente):
-        anim_index = 0
-
-    # 1. Prendi il frame corretto in base all'indice
-    frame_corrente = lista_corrente[int(anim_index)]
-
-    # 2. Calcola le coordinate SCHERMO per centrare il frame sulla posizione mondo del giocatore
-    sprite_x = player_pos.x - camera_x - frame_corrente.get_width() / 2
-    sprite_y = player_pos.y - frame_corrente.get_height() / 2
-
-    # 3. Disegna lo sprite sullo schermo
-    screen.blit(frame_corrente, (sprite_x, sprite_y))
-
-    # 4. Aggiorna l'animazione
-    if keys[pygame.K_d] or keys[pygame.K_a] or not onGround:
-        anim_index += 0.15  # Velocità per camminata o salto
-    else:
-        anim_index += 0.05  # Velocità più lenta per lo stato fermo (idle)
-
-    if not onGround:
-        if anim_index >= len(lista_corrente):
-            anim_index = 4  # Loop in salto (dal quinto sprite in poi)
-    elif anim_index >= len(lista_corrente):
-        anim_index = 0
-
-    #input salto(base)
-    if keys[pygame.K_SPACE]:
+def movementInHandler(keys, delta):
+    global Falling
+    global speed
+    global baseSpeed
+    global onGround
+    global playerJumping
+    global GravityForce
+    global MinGravityForce
+    global JumpDuration
+    global MaxJumpDuration
+    global JumpForce
+    global MaxJumpForce
+    global player_pos
+    global dt
+    dt = delta
+    if keys[pygame.K_SPACE] and not Falling:
         speed = baseSpeed + 50 #velocita` lergemente piu` alta durante il salto, per dare idea di slancio in avanti e di rincorsa
         playerJumping = True
         if onGround:
@@ -211,20 +163,8 @@ while running:
         if not Falling:
             Falling = True
             GravityForce = MinGravityForce
-    #input direzione
     if keys[pygame.K_d]:
-        player_pos.x += speed * dt
+        player_pos.x += speed * delta
     elif keys[pygame.K_a]:
-        player_pos.x -= speed * dt
-    
-    # Limita il giocatore ai bordi del mondo (sfondo)
-    half_w = dimensioni_sprite[0] / 2
-    player_pos.x = max(half_w, player_pos.x)
-    player_pos.x = min(SFONDO_W - half_w, player_pos.x)
-
-    pygame.display.flip()
-
-    dt = clock.tick(60) / 1000
-
-pygame.quit()
-
+        player_pos.x -= speed * delta
+#sezione "update"
