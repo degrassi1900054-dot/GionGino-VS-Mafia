@@ -1,30 +1,30 @@
-#DIALOGO DON GENNARINO
+#DIALOGO Don Polipone
 
 
-*John Gino arriva al livello davanti a lui c’è Don Gennarino.*
+*John Gino arriva al livello davanti a lui c’è Don Polipone.*
 
 ---
 
-**DON GENNARINO:**
+**Don Polipone:**
 E tu chi saresti?
 
 **JOHN GINO:**
 Sono John Gino. Sono qui per la verità sulla pizza.
 
-**DON GENNARINO:**
+**Don Polipone:**
 La verità? Qui la pizza è “mio territorio”.
 
 **JOHN GINO:**
 Non lo è se è stata rovinata.
 
-**DON GENNARINO:**
+**Don Polipone:**
 Attento a come parli, ragazzo.
 La tradizione non paga le bollette.
 
 **JOHN GINO:**
 Ma senza tradizione… non è più pizza.
 
-**DON GENNARINO:**
+**Don Polipone:**
 Allora dimostralo, vediamo se sai davvero distinguere una vera pizza da una falsa..
 
 **JOHN GINO:**
@@ -38,9 +38,9 @@ Con molto piacere.
 
 ---
 
-**DON GENNARINO è sconfitto.**
+**Don Polipone è sconfitto.**
 
-*Gino si avvicina al corpo esanime di Don Gennarino per perquisirlo. Trova un foglio spiegazzato.
+*Gino si avvicina al corpo esanime di Don Polipone per perquisirlo. Trova un foglio spiegazzato.
 
 **JOHN GINO:**
 Vediamo un po' cosa tenevi in tasca, "Don"... Un biglietto?
