@@ -1,7 +1,6 @@
 from utility import *
 from movement import *
 from levelLoader import *
-loadLevel("test")
 keys = NullHandler
 while running:
     for event in pygame.event.get():
@@ -9,7 +8,9 @@ while running:
             running = False
 
     keys = pygame.key.get_pressed()
-    movementInHandler(keys, dt)
+    setDt(dt)
+    movementInHandler(keys)
+
 
     # --- Calcolo posizione telecamera ---
     # La telecamera cerca di posizionare il giocatore a CAMERA_OFFSET_X dal bordo sinistro
@@ -76,7 +77,6 @@ while running:
     player_pos.x = min(SFONDO_W - half_w, player_pos.x)
 
     pygame.display.flip()
-    print("dt here: " + str(dt))
     dt = clock.tick(60) / 1000
 
 pygame.quit()
