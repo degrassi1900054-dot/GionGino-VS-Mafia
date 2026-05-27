@@ -1,0 +1,533 @@
+import pygame
+import sys
+import random
+import math
+
+# Inizializzazione
+pygame.init()
+
+# Dimensioni - HD
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Napoli 1946")
+
+clock = pygame.time.Clock()
+FPS = 60
+
+menu_bg_original = pygame.image.load("sfondomenù.png").convert()
+orig_w, orig_h = menu_bg_original.get_size()
+
+# Ritaglio bordi
+crop_margin_x = int(orig_w * 0.05)
+crop_margin_y = int(orig_h * 0.05)
+crop_w = orig_w - (crop_margin_x * 2)
+crop_h = orig_h - (crop_margin_y * 2)
+cropped_bg = menu_bg_original.subsurface((crop_margin_x, crop_margin_y, crop_w, crop_h))
+
+# Adattamento ritaglio
+scale_factor = SCREEN_HEIGHT / crop_h
+new_w = int(crop_w * scale_factor)
+menu_bg_tile = pygame.transform.smoothscale(cropped_bg, (new_w, SCREEN_HEIGHT))
+
+# Font
+try:
+    font_title = pygame.font.SysFont("georgia", 60, bold=True)
+    font_subtitle = pygame.font.SysFont("georgia", 24, italic=True)
+    font_sign = pygame.font.SysFont("serif", 24, bold=True)
+    font_ui = pygame.font.SysFont("sans", 18, bold=True)
+    font_crate = pygame.font.SysFont("serif", 12, bold=True)
+except:
+    font_title = pygame.font.Font(None, 70)
+    font_subtitle = pygame.font.Font(None, 30)
+    font_sign = pygame.font.Font(None, 26)
+    font_ui = pygame.font.Font(None, 20)
+    font_crate = pygame.font.Font(None, 14)
+
+# Stati del gioco flow
+STATE_MENU = "menu"
+STATE_SETTINGS = "settings"
+STATE_CHAR_SELECT = "char_select"
+STATE_LEVEL_SELECT = "level_select"
+STATE_GAME = "game"
+current_state = STATE_MENU
+
+# Impostazioni di gioco modificabili
+game_volume = 0.7  # Da 0.0 a 1.0
+game_brightness = 1.0  # Da 0.0 a 1.0
+selected_character = "GionGino (Principale)"
+has_save_data = False  # True se si salva
+last_played_level = 1
+
+# LIVELLI
+LEVELS = {
+    1: {
+        "name": "1. IL PORTO",
+        "sky": (210, 195, 180),
+        "bg_color": (130, 120, 130),
+        "fg_color": (85, 75, 90),
+        "ground": (45, 42, 50),
+        "particle_type": "water",
+        "pizzeria_suffix": "al Molo",
+        "boss": "Lucky Tonnato"
+    },
+    2: {
+        "name": "2. IL MERCATO",
+        "sky": (245, 215, 170),
+        "bg_color": (180, 140, 110),
+        "fg_color": (130, 90, 70),
+        "ground": (85, 75, 65),
+        "particle_type": "dust",
+        "pizzeria_suffix": "Rionale",
+        "boss": "Joe Prosciutto"
+    },
+    3: {
+        "name": "3. IL CANTIERE",
+        "sky": (195, 180, 165),
+        "bg_color": (130, 115, 105),
+        "fg_color": (110, 95, 80),
+        "ground": (65, 60, 55),
+        "particle_type": "sparks",
+        "boss": "Frankie Bulldozer"
+    },
+    4: {
+        "name": "4. LA FABBRICA",
+        "sky": (110, 105, 105),
+        "bg_color": (75, 70, 75),
+        "fg_color": (50, 45, 55),
+        "ground": (35, 33, 38),
+        "particle_type": "smoke",
+        "boss": "Al Capizza"
+    },
+    5: {
+        "name": "5. LE FOGNE",
+        "sky": (12, 10, 15),
+        "bg_color": (25, 20, 30),
+        "fg_color": (22, 28, 25),
+        "ground": (10, 12, 11),
+        "particle_type": "drip"
+    },
+    6: {
+        "name": "6. LA VILLA DEL BOSS",
+        "sky": (15, 12, 25),
+        "bg_color": (32, 25, 45),
+        "fg_color": (140, 115, 80),
+        "ground": (28, 22, 35),
+        "particle_type": "smoke_gold",
+        "boss": "Tony Montanara"
+    }
+}
+
+# Scorrimento
+current_level_id = 1
+camera_x = 0
+scroll_speed = 8
+transition_alpha = 0
+transitioning = False
+target_level_id = 1
+
+
+# Classe particelle
+class Particle:
+    def __init__(self, level_type):
+        self.reset(level_type, True)
+
+    def reset(self, level_type, init_anywhere=False):
+        self.level_type = level_type
+        self.x = random.randint(0, SCREEN_WIDTH)
+        self.y = random.randint(0, SCREEN_HEIGHT) if init_anywhere else (
+            -10 if level_type not in ["smoke_gold"] else SCREEN_HEIGHT + 10)
+
+        if level_type == "water":
+            self.y = random.randint(520, 720)
+            self.vx = random.uniform(-1, 1)
+            self.vy = random.uniform(-0.5, -2)
+            self.size = random.randint(2, 4)
+            self.color = (180, 205, 225, 130)
+        elif level_type == "dust":
+            self.vx = random.uniform(-0.4, 0.4)
+            self.vy = random.uniform(0.2, 0.7)
+            self.size = random.randint(1, 3)
+            self.color = (255, 225, 170, 95)
+        elif level_type == "smoke":
+            self.vx = random.uniform(-2, -0.5)
+            self.vy = random.uniform(0.8, 1.8)
+            self.size = random.randint(5, 11)
+            self.color = (55, 52, 52, 140)
+        elif level_type == "drip":
+            self.vx = random.uniform(-0.1, 0.1)
+            self.vy = random.uniform(4, 8)
+            self.size = random.randint(1, 3)
+            self.color = (60, 180, 140, 160)
+        elif level_type == "sparks":
+            self.vx = random.uniform(-2, 2)
+            self.vy = random.uniform(1.5, 4)
+            self.size = random.randint(1, 4)
+            self.color = (255, 140, 35, 210)
+        elif level_type == "smoke_gold":
+            self.y = random.randint(150, 600) if init_anywhere else SCREEN_HEIGHT - 100
+            self.vx = random.uniform(-0.6, 0.6)
+            self.vy = random.uniform(-0.4, -1.2)
+            self.size = random.randint(2, 7)
+            self.color = (225, 185, 65, 170) if random.random() < 0.35 else (170, 170, 180, 75)
+
+        self.surf = pygame.Surface((self.size * 2, self.size * 2), pygame.SRCALPHA)
+        pygame.draw.circle(self.surf, self.color, (self.size, self.size), self.size)
+
+    def update(self, cam_delta):
+        self.x -= cam_delta * 0.8
+        self.x += self.vx
+        self.y += self.vy
+        if (self.y > SCREEN_HEIGHT + 20 or self.y < -20 or self.x < -20 or self.x > SCREEN_WIDTH + 20):
+            self.reset(self.level_type)
+
+    def draw(self, surface):
+        surface.blit(self.surf, (int(self.x - self.size), int(self.y - self.size)))
+
+
+particles = [Particle(LEVELS[current_level_id]["particle_type"]) for _ in range(80)]
+
+# Generazione livelli
+level_structures = {}
+
+
+def build_scenario_for_level(lvl_id):
+    random.seed(lvl_id * 105)
+    structures = []
+    current_x = -3000
+    while current_x < 6000:
+        width = random.randint(200, 380)
+        height = random.randint(220, 500)
+        struct_type = 2 if random.random() < 0.25 else 1
+        structures.append({
+            "x": current_x, "width": width, "height": height, "type": struct_type,
+            "color_offset": random.randint(-15, 15), "detail_seed": random.randint(0, 1000)
+        })
+        current_x += width - random.randint(0, 20)
+    return structures
+
+
+for i in range(1, 7):
+    level_structures[i] = build_scenario_for_level(i)
+
+
+# Funzioni degli sfondi
+def draw_background_skyline(surface, lvl_id, cam_x):
+    color = LEVELS[lvl_id]["bg_color"]
+    if lvl_id == 1:
+        v_px = -(cam_x * 0.08) % 2000
+        for i in range(-1, 2):
+            base_x = v_px + (i * 2000) + 150
+            pygame.draw.polygon(surface, color,
+                                [(base_x, 500), (base_x + 350, 320), (base_x + 650, 290), (base_x + 1100, 500)])
+    elif lvl_id == 6:
+        v_px = -(cam_x * 0.07) % 1600
+        for i in range(-1, 2):
+            base_x = v_px + (i * 1600) + 300
+            pygame.draw.ellipse(surface, color, (base_x - 100, 300, 800, 300))
+
+
+def draw_pizzeria_sign(surface, x, floor_y, struct, text_str):
+    w = struct["width"]
+    sign_w = int(w * 0.85)
+    sign_x = x + (w - sign_w) // 2
+    sign_y = floor_y - 125
+    pygame.draw.rect(surface, (130, 30, 20), (sign_x, sign_y, sign_w, 40), border_radius=4)
+    pygame.draw.rect(surface, (240, 218, 175), (sign_x + 3, sign_y + 3, sign_w - 6, 34), border_radius=4)
+    ts = pygame.font.SysFont("serif", 16, bold=True).render(text_str.upper(), True, (90, 20, 12))
+    surface.blit(ts, (sign_x + (sign_w - ts.get_width()) // 2, sign_y + (40 - ts.get_height()) // 2))
+
+
+def draw_foreground_level(surface, lvl_id, cam_x):
+    level = LEVELS[lvl_id]
+    floor_y = 580
+    for s in level_structures[lvl_id]:
+        screen_x = s["x"] - cam_x
+        while screen_x < -s["width"] - 300: screen_x += 9000
+        while screen_x > SCREEN_WIDTH + 300: screen_x -= 9000
+        if screen_x + s["width"] < -100 or screen_x > SCREEN_WIDTH + 100: continue
+
+        bc = level["fg_color"]
+        col = (max(0, min(255, bc[0] + s["color_offset"])), max(0, min(255, bc[1] + s["color_offset"])),
+               max(0, min(255, bc[2] + s["color_offset"])))
+        pygame.draw.rect(surface, col, (screen_x, floor_y - s["height"], s["width"], s["height"]))
+        pygame.draw.rect(surface, (30, 30, 30), (screen_x, floor_y - s["height"], s["width"], s["height"]), 2)
+
+        if s["type"] == 2:
+            pizzeria_name = level.get("pizzeria_suffix")
+            if pizzeria_name:
+                draw_pizzeria_sign(surface, screen_x, floor_y, s, f"Pizzeria {pizzeria_name}")
+
+
+# UI interfaccia
+def draw_button(surface, rect, text, is_hovered, bg_color=(70, 55, 45), text_color=(240, 230, 215)):
+    # Effetto feedback visivo al passaggio del mouse
+    actual_bg = (int(bg_color[0] * 1.2), int(bg_color[1] * 1.2), int(bg_color[2] * 1.2)) if is_hovered else bg_color
+    pygame.draw.rect(surface, actual_bg, rect, border_radius=8)
+    pygame.draw.rect(surface, (200, 170, 130), rect, 2, border_radius=8)
+    txt_surf = font_ui.render(text, True, text_color)
+    surface.blit(txt_surf, (rect.x + (rect.width - txt_surf.get_width()) // 2,
+                            rect.y + (rect.height - txt_surf.get_height()) // 2))
+
+
+# Loop Principale
+running = True
+while running:
+    mouse_pos = pygame.mouse.get_pos()
+    mouse_clicked = False
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_clicked = True
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                # Menù principale con ESC
+                current_state = STATE_MENU
+
+    # Schermata principale e menù
+
+        if current_state == STATE_MENU:
+            # Disegno sfondo
+            screen.blit(menu_bg_tile, (0, 0))
+
+            # Disegno titolo e sottotitolo
+            title_text_shadow = font_title.render("GionGino", True, (20, 15, 10))
+            title_text = font_title.render("GionGino", True, (215, 165, 85))
+            sub_text_shadow = font_subtitle.render("versus Mafia", True, (20, 15, 10))
+            sub_text = font_subtitle.render("versus Mafia", True, (240, 230, 215))
+
+            # Ombreggiatura testo
+            title_x = SCREEN_WIDTH // 2 - title_text.get_width() // 2
+            screen.blit(title_text_shadow, (title_x + 2, 122))
+            screen.blit(title_text, (title_x, 120))
+
+            sub_x = SCREEN_WIDTH // 2 - sub_text.get_width() // 2
+            screen.blit(sub_text_shadow, (sub_x + 2, 202))
+            screen.blit(sub_text, (sub_x, 200))
+
+            # Disegno bottoni
+            btn_new_game = pygame.Rect(SCREEN_WIDTH // 2 - 150, 300, 300, 50)
+            btn_continue = pygame.Rect(SCREEN_WIDTH // 2 - 150, 370, 300, 50)
+            btn_settings = pygame.Rect(SCREEN_WIDTH // 2 - 150, 440, 300, 50)
+            btn_exit = pygame.Rect(SCREEN_WIDTH // 2 - 150, 510, 300, 50)
+
+            # Logica bottoni
+            draw_button(screen, btn_new_game, "NUOVA PARTITA", btn_new_game.collidepoint(mouse_pos))
+            draw_button(screen, btn_continue, "CONTINUA",
+                        btn_continue.collidepoint(mouse_pos) if has_save_data else False,
+                        bg_color=(70, 55, 45) if has_save_data else (40, 35, 35),
+                        text_color=(240, 230, 215) if has_save_data else (100, 100, 100))
+            draw_button(screen, btn_settings, "IMPOSTAZIONI", btn_settings.collidepoint(mouse_pos))
+            draw_button(screen, btn_exit, "ESCI", btn_exit.collidepoint(mouse_pos), bg_color=(100, 40, 35))
+
+            # Gestione click flow
+            if mouse_clicked:
+                if btn_new_game.collidepoint(mouse_pos):
+                    current_state = STATE_CHAR_SELECT
+                elif btn_continue.collidepoint(mouse_pos) and has_save_data:
+                    current_level_id = last_played_level
+                    current_state = STATE_GAME
+                elif btn_settings.collidepoint(mouse_pos):
+                    current_state = STATE_SETTINGS
+                elif btn_exit.collidepoint(mouse_pos):
+                    running = False
+
+
+    # Impostazioni (Volume, Lumonosità, Salvataggio)
+            elif current_state == STATE_SETTINGS:
+                screen.fill((30, 28, 32))
+
+        title_sett = font_title.render("IMPOSTAZIONI", True, (240, 230, 215))
+        screen.blit(title_sett, (SCREEN_WIDTH // 2 - title_sett.get_width() // 2, 80))
+
+        # Logica slider (Volume e Luminosità)
+        vol_slider_rect = pygame.Rect(SCREEN_WIDTH // 2 - 200, 260, 400, 12)
+        lum_slider_rect = pygame.Rect(SCREEN_WIDTH // 2 - 200, 380, 400, 12)
+
+        pygame.draw.rect(screen, (60, 55, 65), vol_slider_rect, border_radius=4)
+        pygame.draw.rect(screen, (60, 55, 65), lum_slider_rect, border_radius=4)
+
+        # Gestione slider
+        if pygame.mouse.get_pressed()[0]:
+            if vol_slider_rect.inflate(0, 20).collidepoint(mouse_pos):
+                game_volume = max(0.0, min(1.0, (mouse_pos[0] - vol_slider_rect.x) / vol_slider_rect.width))
+            if lum_slider_rect.inflate(0, 20).collidepoint(mouse_pos):
+                game_brightness = max(0.2, min(1.0, (mouse_pos[0] - lum_slider_rect.x) / lum_slider_rect.width))
+
+        # Disegno slider
+        pygame.draw.circle(screen, (215, 165, 85),
+                           (int(vol_slider_rect.x + game_volume * vol_slider_rect.width), vol_slider_rect.centery), 12)
+        pygame.draw.circle(screen, (215, 165, 85),
+                           (int(lum_slider_rect.x + game_brightness * lum_slider_rect.width), lum_slider_rect.centery),
+                           12)
+
+        # Testi descrittivi
+        screen.blit(font_ui.render(f"VOLUME AUDIO: {int(game_volume * 100)}%", True, (200, 190, 180)),
+                    (vol_slider_rect.x, 225))
+        screen.blit(font_ui.render(f"LUMINOSITÀ SCHERMO: {int(game_brightness * 100)}%", True, (200, 190, 180)),
+                    (lum_slider_rect.x, 345))
+
+        # Pulsanti pannello impostazioni
+        btn_save_config = pygame.Rect(SCREEN_WIDTH // 2 - 160, 490, 320, 50)
+        btn_back = pygame.Rect(SCREEN_WIDTH // 2 - 160, 560, 320, 45)
+
+        draw_button(screen, btn_save_config, "SALVA CONFIGURAZIONE", btn_save_config.collidepoint(mouse_pos),
+                    bg_color=(45, 85, 55))
+        draw_button(screen, btn_back, "INDIETRO AL MENÙ", btn_back.collidepoint(mouse_pos))
+
+        if mouse_clicked:
+            if btn_save_config.collidepoint(mouse_pos):
+                has_save_data = True  # salvataggio configurazioni
+                current_state = STATE_MENU
+            elif btn_back.collidepoint(mouse_pos):
+                current_state = STATE_MENU
+
+            elif current_state == STATE_CHAR_SELECT:
+                screen.fill((22, 26, 30))
+
+        title_char = font_title.render("SELEZIONA PERSONAGGIO", True, (240, 230, 215))
+        screen.blit(title_char, (SCREEN_WIDTH // 2 - title_char.get_width() // 2, 80))
+
+        # Dimensioni riquadri
+        card_w, card_h = 220, 340
+        spacing = 40
+        total_width = (4 * card_w) + (3 * spacing)
+        start_x = (SCREEN_WIDTH - total_width) // 2
+        start_y = 220
+
+        # Definizione dei 4 slot: 3 Maschili e 1 Femminile
+        character_slots = [
+            {"id": 1, "gender": "Maschile (Slot 1)"},
+            {"id": 2, "gender": "Maschile (Slot 2)"},
+            {"id": 3, "gender": "Maschile (Slot 3)"},
+            {"id": 4, "gender": "Femminile (Slot 4)"}
+        ]
+
+        for idx, slot in enumerate(character_slots):
+            rx = start_x + idx * (card_w + spacing)
+            card_rect = pygame.Rect(rx, start_y, card_w, card_h)
+            is_hovered = card_rect.collidepoint(mouse_pos)
+
+            # Colore interazione dinamica
+            if is_hovered:
+                fill_color = (55, 65, 80)
+                border_color = (215, 165, 85)  # Oro per feedback di focus
+                border_thickness = 4
+            else:
+                fill_color = (32, 35, 42)
+                border_color = (80, 85, 95)
+                border_thickness = 2
+
+            pygame.draw.rect(screen, fill_color, card_rect, border_radius=12)
+            pygame.draw.rect(screen, border_color, card_rect, border_thickness, border_radius=12)
+
+            # Gestione della selezione personaggio
+            if mouse_clicked and is_hovered:
+                selected_character_label = slot["gender"]
+                current_state = STATE_LEVEL_SELECT
+
+    # Selezione livelli
+            elif current_state == STATE_LEVEL_SELECT:
+                screen.fill((24, 24, 24))
+
+        title_lvl = font_title.render("SELEZIONA LIVELLO", True, (215, 165, 85))
+        screen.blit(title_lvl, (SCREEN_WIDTH // 2 - title_lvl.get_width() // 2, 60))
+
+        # Griglia icone dei livelli
+        icon_w, icon_h = 280, 140
+        start_grid_x = (SCREEN_WIDTH - (3 * icon_w + 2 * 40)) // 2
+        start_grid_y = 180
+
+        for idx in range(1, 7):
+            col = (idx - 1) % 3
+            row = (idx - 1) // 3
+
+            rx = start_grid_x + col * (icon_w + 40)
+            ry = start_grid_y + row * (icon_h + 40)
+            icon_rect = pygame.Rect(rx, ry, icon_w, icon_h)
+
+            is_h = icon_rect.collidepoint(mouse_pos)
+            # Colore scenario reale
+            base_c = LEVELS[idx]["fg_color"]
+            box_color = (int(base_c[0] * 0.6), int(base_c[1] * 0.6), int(base_c[2] * 0.6))
+            if is_h:
+                box_color = base_c
+
+            pygame.draw.rect(screen, box_color, icon_rect, border_radius=10)
+            pygame.draw.rect(screen, (215, 165, 85) if is_h else (70, 70, 70), icon_rect, 2, border_radius=10)
+
+            # Scritta del livello all'interno dell'icona
+            txt_n = font_ui.render(LEVELS[idx]["name"], True, (255, 255, 255))
+            screen.blit(txt_n, (rx + 20, ry + 40))
+            if "boss" in LEVELS[idx]:
+                boss_name = LEVELS[idx]["boss"]
+                txt_b = font_crate.render(f"Boss: {boss_name}", True, (230, 200, 180))
+                screen.blit(txt_b, (rx + 20, ry + 80))
+
+            if mouse_clicked and icon_rect.collidepoint(mouse_pos):
+                current_level_id = idx
+                last_played_level = idx
+                has_save_data = True
+                # Inizializza le particelle giuste del livello scelto
+                new_ptype = LEVELS[current_level_id]["particle_type"]
+                for p in particles:
+                    p.reset(new_ptype, init_anywhere=True)
+                camera_x = 0
+                current_state = STATE_GAME  # Avvio
+
+
+    # Stato del gioco
+            elif current_state == STATE_GAME:
+        # Movimento orizzontale della visuale
+                keys = pygame.key.get_pressed()
+                cam_delta = 0
+                if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                    cam_delta = -scroll_speed
+                if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                    cam_delta = scroll_speed
+                camera_x += cam_delta
+
+        # Aggiornamento particelle
+                for p in particles:
+                    p.update(cam_delta)
+
+        # Scenario dinamico
+        current_level = LEVELS[current_level_id]
+        screen.fill(current_level["sky"])
+
+        draw_background_skyline(screen, current_level_id, camera_x)
+        draw_foreground_level(screen, current_level_id, camera_x)
+
+        # Pavimentazione stradale
+        ground_y = 580
+        pygame.draw.rect(screen, current_level["ground"], (0, ground_y, SCREEN_WIDTH, SCREEN_HEIGHT - ground_y))
+        pygame.draw.line(screen, (15, 12, 10), (0, ground_y), (SCREEN_WIDTH, ground_y), 4)
+
+        # Disegno particelle
+        for p in particles:
+            p.draw(screen)
+
+        # UI
+        pygame.draw.rect(screen, (242, 235, 220), (15, 15, SCREEN_WIDTH - 30, 52), border_radius=6)
+        pygame.draw.rect(screen, (80, 65, 55), (15, 15, SCREEN_WIDTH - 30, 52), 2, border_radius=6)
+
+        # Informazioni sul personaggio e istruzioni
+        ui_string = f"SCENARIO DI GIOCO: {current_level['name']}  |  ERORE: {selected_character.upper()}  |  [A-D / FRECCE] Esplora  |  [ESC] Menù"
+        ui_text = font_ui.render(ui_string, True, (45, 30, 20))
+        screen.blit(ui_text, (35, 30))
+
+    # Gestione globale
+    if game_brightness < 1.0:
+        bright_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        bright_overlay.fill((0, 0, 0))
+        bright_overlay.set_alpha(int((1.0 - game_brightness) * 255))
+        screen.blit(bright_overlay, (0, 0))
+
+    pygame.display.flip()
+    clock.tick(FPS)
+
+pygame.quit()
+sys.exit()
