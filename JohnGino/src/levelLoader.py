@@ -32,6 +32,7 @@ def loadLevel(toLoad):
     path = next(l for l in lvlList if l.name == toLoad).path
     tmx_data = load_pygame(path)
     tmx_data.get_layer_by_name("Tiles1")
+loadLevel("test")
 
     
     

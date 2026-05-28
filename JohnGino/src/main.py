@@ -1,6 +1,8 @@
 from utility import *
 from movement import *
 from levelLoader import *
+from spriteAnim import *
+import utility
 keys = NullHandler
 while running:
     for event in pygame.event.get():
@@ -15,10 +17,11 @@ while running:
     # --- Calcolo posizione telecamera ---
     # La telecamera cerca di posizionare il giocatore a CAMERA_OFFSET_X dal bordo sinistro
     camera_x = player_pos.x - CAMERA_OFFSET_X
+    camera_y = player_pos.y - CAMERA_OFFSET_Y
     
-    # Limita la telecamera ai bordi dello sfondo
-    camera_x = max(0, camera_x)                         # Non andare oltre il bordo sinistro
-    camera_x = min(camera_x, SFONDO_W - SCREEN_WIDTH)   # Non andare oltre il bordo destro
+    # Limita la telecamera ai bordi del mondo
+    camera_x = max(0, min(camera_x, WORLD_W - SCREEN_WIDTH))
+    camera_y = max(0, min(camera_y, WORLD_H - SCREEN_HEIGHT))
     
     # Disegna lo sfondo con offset della telecamera
     screen.blit(sfondo, (-camera_x, 0))
@@ -68,13 +71,20 @@ while running:
     elif anim_index >= len(lista_corrente):
         anim_index = 0
 
-    #input salto(base)
-    #input direzione
     
     # Limita il giocatore ai bordi del mondo (sfondo)
     half_w = dimensioni_sprite[0] / 2
+    half_h = dimensioni_sprite[1] / 2
+    player_rect = pygame.Rect(
+        player_pos.x - half_w, player_pos.y - half_h,
+        dimensioni_sprite[0], dimensioni_sprite[1]
+        )
     player_pos.x = max(half_w, player_pos.x)
     player_pos.x = min(SFONDO_W - half_w, player_pos.x)
+    collisionContinuos(keys, half_w, player_rect)
+    #modo temporaneo per chiudere il gioco
+    if keys[pygame.K_ESCAPE]:
+        running = False
 
     pygame.display.flip()
     dt = clock.tick(60) / 1000
