@@ -8,28 +8,28 @@ JOHN GINO:
 "sarà anche grande, ma la tua margherita fa schifo. ora preparati per essere abbattuto."
 
 AL CAPIZZA:
-"va bene, va bene... basta! mi arrendo!"
+"Va bene, va bene... basta! mi arrendo!"
 
 JOHN GINO:
-"è finita, peppino. questa fabbrica chiude i battenti oggi stesso."
+"Al Capizza oggi la fabbrica chiude i battenti!"
 
 AL CAPIZZA:
-"pensi davvero di aver vinto, forestiero? questa fabbrica era solo l'inizio."
+"Pensi davvero di aver vinto, forestiero? questa fabbrica era solo l'inizio."
 
 JOHN GINO:
-"parla."
+"Parla!"
 
 AL CAPIZZA:
-"ormai sei in ritardo. tutti i ristoranti usano le pizze surgelate della big pizza corp. la tradizione è morta."
+"Ormai sei in ritardo. tutti i ristoranti usano le pizze surgelate della Big Pizza Corp. la tradizione è morta."
 
 JOHN GINO:
-"voglio sapere chi è che comanda e dove lo trovo!"
+"Voglio sapere chi è che comanda e dove lo trovo!"
 
 AL CAPIZZA:
-"tanto sei finito lo stesso guagliò, che ho da perdere….big pizza corp headquarters li non impastano pizza ma impastano decisioni e contano i soldi."
+"Tanto sei finito lo stesso guagliò, che ho da perdere….Big Pizza Corp Head Quarter. Li non impastano pizza ma impastano decisioni e contano i soldi."
 
 JOHN GINO:
-"dov’è!"
+"Dov'è! Parla!"
 
 AL CAPIZZA:
-"al centro di napoli è l’edificio più grande non ti puoi sbagliare. li troverai il capo dei capi, il don dei don! il suo nome è….."
+"Al centro di napoli è l’edificio più grande non ti puoi sbagliare. li troverai il capo dei capi, il don dei don! il suo nome è….."
