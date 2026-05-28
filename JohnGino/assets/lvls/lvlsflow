@@ -26,9 +26,10 @@ crop_h = orig_h - (crop_margin_y * 2)
 cropped_bg = menu_bg_original.subsurface((crop_margin_x, crop_margin_y, crop_w, crop_h))
 
 # Adattamento ritaglio
-scale_factor = SCREEN_HEIGHT / crop_h
-new_w = int(crop_w * scale_factor)
-menu_bg_tile = pygame.transform.smoothscale(cropped_bg, (new_w, SCREEN_HEIGHT))
+#scale_factor = SCREEN_HEIGHT / crop_h
+#new_w = int(crop_w * scale_factor)
+#menu_bg_tile = pygame.transform.smoothscale(cropped_bg, (new_w, SCREEN_HEIGHT))
+menu_bg_tile = pygame.transform.smoothscale(cropped_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # Font
 try:
@@ -122,9 +123,9 @@ LEVELS = {
 current_level_id = 1
 camera_x = 0
 scroll_speed = 8
-transition_alpha = 0
-transitioning = False
-target_level_id = 1
+#transition_alpha = 0
+#transitioning = False
+#target_level_id = 1
 
 
 # Classe particelle
@@ -289,56 +290,56 @@ while running:
 
     # Schermata principale e menù
 
-        if current_state == STATE_MENU:
-            # Disegno sfondo
-            screen.blit(menu_bg_tile, (0, 0))
+    if current_state == STATE_MENU:
+        # Disegno sfondo
+        screen.blit(menu_bg_tile, (0, 0))
 
-            # Disegno titolo e sottotitolo
-            title_text_shadow = font_title.render("GionGino", True, (20, 15, 10))
-            title_text = font_title.render("GionGino", True, (215, 165, 85))
-            sub_text_shadow = font_subtitle.render("versus Mafia", True, (20, 15, 10))
-            sub_text = font_subtitle.render("versus Mafia", True, (240, 230, 215))
+        # Disegno titolo e sottotitolo
+        title_text_shadow = font_title.render("GionGino", True, (20, 15, 10))
+        title_text = font_title.render("GionGino", True, (215, 165, 85))
+        sub_text_shadow = font_subtitle.render("versus Mafia", True, (20, 15, 10))
+        sub_text = font_subtitle.render("versus Mafia", True, (240, 230, 215))
 
-            # Ombreggiatura testo
-            title_x = SCREEN_WIDTH // 2 - title_text.get_width() // 2
-            screen.blit(title_text_shadow, (title_x + 2, 122))
-            screen.blit(title_text, (title_x, 120))
+        # Ombreggiatura testo
+        title_x = SCREEN_WIDTH // 2 - title_text.get_width() // 2
+        screen.blit(title_text_shadow, (title_x + 2, 122))
+        screen.blit(title_text, (title_x, 120))
 
-            sub_x = SCREEN_WIDTH // 2 - sub_text.get_width() // 2
-            screen.blit(sub_text_shadow, (sub_x + 2, 202))
-            screen.blit(sub_text, (sub_x, 200))
+        sub_x = SCREEN_WIDTH // 2 - sub_text.get_width() // 2
+        screen.blit(sub_text_shadow, (sub_x + 2, 202))
+        screen.blit(sub_text, (sub_x, 200))
 
-            # Disegno bottoni
-            btn_new_game = pygame.Rect(SCREEN_WIDTH // 2 - 150, 300, 300, 50)
-            btn_continue = pygame.Rect(SCREEN_WIDTH // 2 - 150, 370, 300, 50)
-            btn_settings = pygame.Rect(SCREEN_WIDTH // 2 - 150, 440, 300, 50)
-            btn_exit = pygame.Rect(SCREEN_WIDTH // 2 - 150, 510, 300, 50)
+        # Disegno bottoni
+        btn_new_game = pygame.Rect(SCREEN_WIDTH // 2 - 150, 300, 300, 50)
+        btn_continue = pygame.Rect(SCREEN_WIDTH // 2 - 150, 370, 300, 50)
+        btn_settings = pygame.Rect(SCREEN_WIDTH // 2 - 150, 440, 300, 50)
+        btn_exit = pygame.Rect(SCREEN_WIDTH // 2 - 150, 510, 300, 50)
 
-            # Logica bottoni
-            draw_button(screen, btn_new_game, "NUOVA PARTITA", btn_new_game.collidepoint(mouse_pos))
-            draw_button(screen, btn_continue, "CONTINUA",
-                        btn_continue.collidepoint(mouse_pos) if has_save_data else False,
-                        bg_color=(70, 55, 45) if has_save_data else (40, 35, 35),
-                        text_color=(240, 230, 215) if has_save_data else (100, 100, 100))
-            draw_button(screen, btn_settings, "IMPOSTAZIONI", btn_settings.collidepoint(mouse_pos))
-            draw_button(screen, btn_exit, "ESCI", btn_exit.collidepoint(mouse_pos), bg_color=(100, 40, 35))
+        # Logica bottoni
+        draw_button(screen, btn_new_game, "NUOVA PARTITA", btn_new_game.collidepoint(mouse_pos))
+        draw_button(screen, btn_continue, "CONTINUA",
+                    btn_continue.collidepoint(mouse_pos) if has_save_data else False,
+                    bg_color=(70, 55, 45) if has_save_data else (40, 35, 35),
+                    text_color=(240, 230, 215) if has_save_data else (100, 100, 100))
+        draw_button(screen, btn_settings, "IMPOSTAZIONI", btn_settings.collidepoint(mouse_pos))
+        draw_button(screen, btn_exit, "ESCI", btn_exit.collidepoint(mouse_pos), bg_color=(100, 40, 35))
 
-            # Gestione click flow
-            if mouse_clicked:
-                if btn_new_game.collidepoint(mouse_pos):
-                    current_state = STATE_CHAR_SELECT
-                elif btn_continue.collidepoint(mouse_pos) and has_save_data:
-                    current_level_id = last_played_level
-                    current_state = STATE_GAME
-                elif btn_settings.collidepoint(mouse_pos):
-                    current_state = STATE_SETTINGS
-                elif btn_exit.collidepoint(mouse_pos):
-                    running = False
+        # Gestione click flow
+        if mouse_clicked:
+            if btn_new_game.collidepoint(mouse_pos):
+                current_state = STATE_CHAR_SELECT
+            elif btn_continue.collidepoint(mouse_pos) and has_save_data:
+                current_level_id = last_played_level
+                current_state = STATE_GAME
+            elif btn_settings.collidepoint(mouse_pos):
+                current_state = STATE_SETTINGS
+            elif btn_exit.collidepoint(mouse_pos):
+                running = False
 
 
     # Impostazioni (Volume, Lumonosità, Salvataggio)
-            elif current_state == STATE_SETTINGS:
-                screen.fill((30, 28, 32))
+    elif current_state == STATE_SETTINGS:
+        screen.fill((30, 28, 32))
 
         title_sett = font_title.render("IMPOSTAZIONI", True, (240, 230, 215))
         screen.blit(title_sett, (SCREEN_WIDTH // 2 - title_sett.get_width() // 2, 80))
@@ -385,8 +386,8 @@ while running:
             elif btn_back.collidepoint(mouse_pos):
                 current_state = STATE_MENU
 
-            elif current_state == STATE_CHAR_SELECT:
-                screen.fill((22, 26, 30))
+    elif current_state == STATE_CHAR_SELECT:
+        screen.fill((22, 26, 30))
 
         title_char = font_title.render("SELEZIONA PERSONAGGIO", True, (240, 230, 215))
         screen.blit(title_char, (SCREEN_WIDTH // 2 - title_char.get_width() // 2, 80))
@@ -430,8 +431,8 @@ while running:
                 current_state = STATE_LEVEL_SELECT
 
     # Selezione livelli
-            elif current_state == STATE_LEVEL_SELECT:
-                screen.fill((24, 24, 24))
+    elif current_state == STATE_LEVEL_SELECT:
+        screen.fill((24, 24, 24))
 
         title_lvl = font_title.render("SELEZIONA LIVELLO", True, (215, 165, 85))
         screen.blit(title_lvl, (SCREEN_WIDTH // 2 - title_lvl.get_width() // 2, 60))
@@ -480,19 +481,19 @@ while running:
 
 
     # Stato del gioco
-            elif current_state == STATE_GAME:
+    elif current_state == STATE_GAME:
         # Movimento orizzontale della visuale
-                keys = pygame.key.get_pressed()
-                cam_delta = 0
-                if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-                    cam_delta = -scroll_speed
-                if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                    cam_delta = scroll_speed
-                camera_x += cam_delta
+        keys = pygame.key.get_pressed()
+        cam_delta = 0
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            cam_delta = -scroll_speed
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            cam_delta = scroll_speed
+            camera_x += cam_delta
 
         # Aggiornamento particelle
-                for p in particles:
-                    p.update(cam_delta)
+        for p in particles:
+            p.update(cam_delta)
 
         # Scenario dinamico
         current_level = LEVELS[current_level_id]
