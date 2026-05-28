@@ -89,7 +89,7 @@ Per garantire la corretta lettura da parte del sistema di parsing, tutti i testi
 
 ---
 
-### Tabella Riassuntiva dei File Narrative
+### Tabella Riassuntiva dei File dialogue
 
 | Tipo di Dialogo | Naming Convention / File | Formato Testo | Descrizione |
 | :--- | :--- | :--- | :--- |
