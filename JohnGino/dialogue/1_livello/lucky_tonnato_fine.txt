@@ -1,8 +1,8 @@
 john gino:
-"vediamo un po' cosa tenevi in tasca... un biglietto?"
+"Vediamo un po' cosa tenevi in tasca... un biglietto?"
 
 john gino:
-"ore 23:00. vecchio mercato. non tardare. — joe Prosciutto."
+"Ore 23:00. vecchio mercato. Non tardare. — Joe Prosciutto."
 
 john gino:
-"sono sempre stato puntuale agli appuntamenti."
+"Sono sempre stato puntuale agli appuntamenti."
