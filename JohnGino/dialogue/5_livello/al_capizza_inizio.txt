@@ -1,1 +1,14 @@
+JOHN GINO:
+"fine della corsa. ho steso tutti i tuoi uomini."
 
+AL CAPIZZA:
+"non vincerai tu! la big pizza corp è troppo grande per un solo uomo!"
+
+JOHN GINO:
+"sarà anche grande, ma la tua margherita fa schifo. ora preparati per essere abbattuto."
+
+AL CAPIZZA:
+"Va bene, va bene... basta! mi arrendo!"
+
+JOHN GINO:
+"Al Capizza oggi la fabbrica chiude i battenti!"
