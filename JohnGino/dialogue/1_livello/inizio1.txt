@@ -1,19 +1,19 @@
 scagnozzo 1:
-"Fermati lì, forestiero. posa la valigia."
+"fermati lì, forestiero. posa la valigia."
 
 john gino:
-"Sono appena tornato a casa. non cerco guai."
+"sono appena tornato a casa. non cerco guai."
 
 scagnozzo 2:
-"Casa tua? napoli non è più di chi ci abita, pure l'aria che respiri su questo molo ha un prezzo. Caccia i soldi."
+"casa tua? napoli non è più di chi ci abita, pure l'aria che respiri su questo molo ha un prezzo. Caccia i soldi."
 
 john gino:
-"Sono mancato dieci anni. vedo che la città è peggiorata. Io non pago nessuno per camminare sulla mia terra."
+"sono mancato dieci anni. vedo che la città è peggiorata. Io non pago nessuno per camminare sulla mia terra."
 
 scagnozzo 1:
-"Senti a me, guaglione, nessuno sa chi sei. Paga o da questo porto ne esci dentro una cassa da muorto."
+"senti a me, guaglione, nessuno sa chi sei. Paga o da questo porto ne esci dentro una cassa da muorto."
 
 john gino:
-"Appunto, non sapete chi sono.Fuori dai piedi!"
+"appunto, non sapete chi sono.Fuori dai piedi!"
 
 
