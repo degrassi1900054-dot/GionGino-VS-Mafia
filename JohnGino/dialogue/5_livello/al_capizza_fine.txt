@@ -1,26 +1,26 @@
 AL CAPIZZA:
-"Va bene, va bene... basta! mi arrendo!"
+"va bene, va bene... basta! mi arrendo!"
 
 JOHN GINO:
-"Al Capizza oggi la fabbrica chiude i battenti!"
+"al Capizza oggi la fabbrica chiude i battenti!"
 
 AL CAPIZZA:
-"Pensi davvero di aver vinto, forestiero? questa fabbrica era solo l'inizio."
+"pensi davvero di aver vinto, forestiero? questa fabbrica era solo l'inizio."
 
 JOHN GINO:
-"Parla!"
+"parla!"
 
 AL CAPIZZA:
-"Ormai sei in ritardo. tutti i ristoranti usano le pizze surgelate della Big Pizza Corp. la tradizione è morta."
+"ormai sei in ritardo. tutti i ristoranti usano le pizze surgelate della Big Pizza Corp. la tradizione è morta."
 
 JOHN GINO:
-"Voglio sapere chi è che comanda e dove lo trovo!"
+"voglio sapere chi è che comanda e dove lo trovo!"
 
 AL CAPIZZA:
-"Tanto sei finito lo stesso guagliò, che ho da perdere….Big Pizza Corp Head Quarter. Li non impastano pizza ma impastano decisioni e contano i soldi."
+"tanto sei finito lo stesso guagliò, che ho da perdere….Big Pizza Corp Head Quarter. Li non impastano pizza ma impastano decisioni e contano i soldi."
 
 JOHN GINO:
-"Dov'è! Parla!"
+"dov'è! parla!"
 
 AL CAPIZZA:
-"Al centro di napoli è l’edificio più grande non ti puoi sbagliare. li troverai il capo dei capi, il don dei don! il suo nome è….."
+"al centro di napoli è l’edificio più grande non ti puoi sbagliare. li troverai il capo dei capi, il don dei don! il suo nome è….."
