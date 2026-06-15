@@ -4,6 +4,8 @@ from levelLoader import *
 from spriteAnim import *
 import utility
 import charMan
+import enemyMan
+import gameObjects
 keys = NullHandler
 while running:
     for event in pygame.event.get():
@@ -11,9 +13,9 @@ while running:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                player.playerClass[1].primaryShot()
+                charMan.player.playerClass[1].primaryShot()
             elif event.button == 3:
-                player.playerClass[1].secondaryShot()
+                charMan.player.playerClass[1].secondaryShot()
         #ODIO PYGAME, PERCHE` E` APPARENTEMENTE QUESTO 
         #L`UNINCO MODO DI AVERE UN
         #PRESS SINGOLO INVECE DI UN HOLD?
@@ -22,13 +24,23 @@ while running:
                 charMan.player.switchClass(True)
             elif event.key == pygame.K_s:
                 charMan.player.switchClass(False)
+            elif event.key == pygame.K_k:
+                charMan.player.playerClass[1].primaryShot()
+            elif event.key == pygame.K_l:
+                charMan.player.playerClass[1].secondaryShot()
+
                     
     keys = pygame.key.get_pressed()
     setDt(dt)
+    if charMan.player.playerClass[1].cooldown > 0:
+        charMan.player.playerClass[1].cooldown -= dt
+
+    if charMan.player.onGround:
+        charMan.player.playerClass[1].groundReset()
     movementInHandler(keys)
+    charMan.player.momentumHandler()
     charMan.player.switchClassShortCut(keys)
-
-
+    
     # --- Calcolo posizione telecamera ---
     # La telecamera cerca di posizionare il giocatore a CAMERA_OFFSET_X dal bordo sinistro
     camera_x = charMan.player.player_pos.x - CAMERA_OFFSET_X
@@ -43,21 +55,21 @@ while running:
     drawLevel()
 
 
-    # Determina la direzione del giocatore
+    # Determina la charMan.player.direction del giocatore
     if keys[pygame.K_d]:
-        direzione = "destra"
+        charMan.player.direction = "right"
     elif keys[pygame.K_a]:
-        direzione = "sinistra"
+        charMan.player.direction = "left"
 
     # Seleziona l'animazione corretta
     if not charMan.player.onGround:
-        lista_corrente = frames_jump_dx if direzione == "destra" else frames_jump_sx
+        lista_corrente = frames_jump_dx if charMan.player.direction == "right" else frames_jump_sx
     elif keys[pygame.K_d]:
         lista_corrente = frames_walk_dx
     elif keys[pygame.K_a]:
         lista_corrente = frames_walk_sx
     else:
-        lista_corrente = frames_idle_dx if direzione == "destra" else frames_idle_sx
+        lista_corrente = frames_idle_dx if charMan.player.direction == "right" else frames_idle_sx
 
     # Previene errori se l'indice precedente supera la lunghezza della nuova lista di frame
     if anim_index >= len(lista_corrente):
@@ -87,6 +99,8 @@ while running:
         anim_index = 0
 
     
+
+    
     # Limita il giocatore ai bordi del mondo (sfondo)
     half_w = dimensioni_sprite[0] / 2
     half_h = dimensioni_sprite[1] / 2
@@ -98,6 +112,13 @@ while running:
     charMan.player.player_pos.x = min(SFONDO_W - half_w, charMan.player.player_pos.x)
     onCollisionEnter(keys)
     onCollisionStay(keys, half_w)
+    
+    charMan.player.playerClass[1].shotTravel()
+    charMan.player.playerClass[1].shotHitbox()
+    charMan.player.playerClass[1].shotRender()
+    for hp in gameObjects.hookPoints:
+        pygame.draw.polygon(screen, (255, 0, 255), [(hp.x, hp.y - 10), (hp.x - 10, hp.y + 10), (hp.x + 10, hp.y + 10)])
+    pygame.draw.rect(screen, (50, 50, 200), enemyMan.testEnemy.enemyRect)
     #modo temporaneo per chiudere il gioco
     if keys[pygame.K_ESCAPE]:
         running = False

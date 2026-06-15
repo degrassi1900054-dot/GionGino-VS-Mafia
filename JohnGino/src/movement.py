@@ -54,6 +54,10 @@ def fall():
         time.sleep(0.01)
         setGroundY()
         if charMan.player.Falling and GroundY > charMan.player.player_pos.y:
+            if isinstance(charMan.player.playerClass[1], shotgunClass):
+                if not charMan.player.playerClass[1].hasRecoveryJumped:  #pyright: ignore
+                    charMan.player.playerClass[1].isShotgunJump = False #pyright: ignore
+                    charMan.player.playerClass[1].hasRecoveryJumped = False #pyright: ignore
             charMan.player.player_pos.y += math.floor(charMan.player.GravityForce * utility.dt)
             charMan.player.GravityForce += 10
         elif int(GroundY) <= int(charMan.player.player_pos.y):
@@ -63,22 +67,49 @@ def fall():
             charMan.player.GravityForce = charMan.player.MinGravityForce
 
 def movementInHandler(keys):
+    if isinstance(charMan.player.playerClass[1], knifeClass):
+        if charMan.player.playerClass[1].grapple['state'] == 'attached':
+            if keys[pygame.K_SPACE]:
+                charMan.player.playerClass[1].hookDetachJump()
+                return
+            return
+        if charMan.player.playerClass[1].grapple['state'] == 'pulling':
+            if keys[pygame.K_SPACE]:
+                charMan.player.playerClass[1].hookCancelJump()
+                return
+            return
+
     if keys[pygame.K_SPACE] and not charMan.player.Falling:
         charMan.player.speed = charMan.player.baseSpeed + 50 #velocita` lergemente piu` alta durante il salto, per dare idea di slancio in avanti e di rincorsa
         charMan.player.playerJumping = True
-        if player.onGround:
+        if charMan.player.onGround:
             charMan.player.JumpDuration = charMan.player.MaxJumpDuration
             charMan.player.JumpForce = charMan.player.MaxJumpForce
     else:
         charMan.player.speed = charMan.player.baseSpeed
-        charMan.player.playerJumping = False
-        if not charMan.player.Falling:
-            charMan.player.Falling = True
-            charMan.player.GravityForce = charMan.player.MinGravityForce
+        if isinstance(charMan.player.playerClass[1], shotgunClass):
+            if charMan.player.playerClass[1].isShotgunJump: #pyright: ignore
+                charMan.player.playerClass[1].isShotgunJump = False #pyright: ignore
+                if charMan.player.JumpDuration <= 0:
+                    charMan.player.playerJumping = False
+                    if not charMan.player.Falling:
+                        charMan.player.Falling = True
+                        charMan.player.GravityForce = charMan.player.MinGravityForce
+            else:
+                charMan.player.playerJumping = False
+                if not charMan.player.Falling:
+                    charMan.player.Falling = True
+                    charMan.player.GravityForce = charMan.player.MinGravityForce
+        else:
+            charMan.player.playerJumping = False
+            if not charMan.player.Falling:
+                charMan.player.Falling = True
+                charMan.player.GravityForce = charMan.player.MinGravityForce
     if keys[pygame.K_d]:
         charMan.player.player_pos.x += player.speed * utility.dt
     elif keys[pygame.K_a]:
         charMan.player.player_pos.x -= player.speed * utility.dt
+
 JumpThread = threading.Thread(target=jump, daemon=True) 
 FallThread = threading.Thread(target=fall, daemon=True)
 JumpThread.start()
