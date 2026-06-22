@@ -6,7 +6,6 @@ import utility
 import charMan
 import enemyMan
 import gameObjects
-keys = NullHandler
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -30,16 +29,24 @@ while running:
                 charMan.player.playerClass[1].secondaryShot()
 
                     
-    keys = pygame.key.get_pressed()
+    utility.keys = pygame.key.get_pressed()
     setDt(dt)
     if charMan.player.playerClass[1].cooldown > 0:
         charMan.player.playerClass[1].cooldown -= dt
 
+    if enemyMan.testEnemy.state["hitTimer"] > 0:
+        enemyMan.testEnemy.state["hitTimer"] -= dt
+
     if charMan.player.onGround:
         charMan.player.playerClass[1].groundReset()
-    movementInHandler(keys)
+    movementInHandler(utility.keys)
     charMan.player.momentumHandler()
-    charMan.player.switchClassShortCut(keys)
+    charMan.player.switchClassShortCut(utility.keys)
+    if isinstance(charMan.player.playerClass[1], knuckleClass):
+        charMan.player.playerClass[1].climbing() #pyright: ignore
+
+
+
     
     # --- Calcolo posizione telecamera ---
     # La telecamera cerca di posizionare il giocatore a CAMERA_OFFSET_X dal bordo sinistro
@@ -56,17 +63,18 @@ while running:
 
 
     # Determina la charMan.player.direction del giocatore
-    if keys[pygame.K_d]:
-        charMan.player.direction = "right"
-    elif keys[pygame.K_a]:
-        charMan.player.direction = "left"
+    if not charMan.player.isWallClimbing:
+        if utility.keys[pygame.K_d]:
+            charMan.player.direction = "right"
+        elif utility.keys[pygame.K_a]:
+            charMan.player.direction = "left"
 
     # Seleziona l'animazione corretta
     if not charMan.player.onGround:
         lista_corrente = frames_jump_dx if charMan.player.direction == "right" else frames_jump_sx
-    elif keys[pygame.K_d]:
+    elif utility.keys[pygame.K_d]:
         lista_corrente = frames_walk_dx
-    elif keys[pygame.K_a]:
+    elif utility.keys[pygame.K_a]:
         lista_corrente = frames_walk_sx
     else:
         lista_corrente = frames_idle_dx if charMan.player.direction == "right" else frames_idle_sx
@@ -87,7 +95,7 @@ while running:
     
 
     # 4. Aggiorna l'animazione
-    if keys[pygame.K_d] or keys[pygame.K_a] or not charMan.player.onGround:
+    if utility.keys[pygame.K_d] or utility.keys[pygame.K_a] or not charMan.player.onGround:
         anim_index += 0.15  # Velocità per camminata o salto
     else:
         anim_index += 0.05  # Velocità più lenta per lo stato fermo (idle)
@@ -102,25 +110,28 @@ while running:
 
     
     # Limita il giocatore ai bordi del mondo (sfondo)
-    half_w = dimensioni_sprite[0] / 2
-    half_h = dimensioni_sprite[1] / 2
+    utility.halfW = dimensioni_sprite[0] / 2
+    utility.halfH = dimensioni_sprite[1] / 2
     charMan.player.player_rect = pygame.Rect(
-            charMan.player.player_pos.x - half_w, charMan.player.player_pos.y - half_h,
+            charMan.player.player_pos.x - utility.halfW, charMan.player.player_pos.y - utility.halfH,
         dimensioni_sprite[0], dimensioni_sprite[1]
         )
-    charMan.player.player_pos.x = max(half_w, charMan.player.player_pos.x)
-    charMan.player.player_pos.x = min(SFONDO_W - half_w, charMan.player.player_pos.x)
-    onCollisionEnter(keys)
-    onCollisionStay(keys, half_w)
-    
+    charMan.player.player_pos.x = max(utility.halfW, charMan.player.player_pos.x)
+    charMan.player.player_pos.x = min(SFONDO_W - utility.halfW, charMan.player.player_pos.x)
+    onCollisionEnter()
+    onCollisionStay()
+
     charMan.player.playerClass[1].shotTravel()
     charMan.player.playerClass[1].shotHitbox()
     charMan.player.playerClass[1].shotRender()
+    charMan.player.updateClimb()
     for hp in gameObjects.hookPoints:
         pygame.draw.polygon(screen, (255, 0, 255), [(hp.x, hp.y - 10), (hp.x - 10, hp.y + 10), (hp.x + 10, hp.y + 10)])
-    pygame.draw.rect(screen, (50, 50, 200), enemyMan.testEnemy.enemyRect)
+
+    curEnColor = enemyMan.testEnemy.state["hit"] if enemyMan.testEnemy.state["hitTimer"] > 0 else enemyMan.testEnemy.state["normal"] 
+    pygame.draw.rect(screen, curEnColor, enemyMan.testEnemy.enemyRect)
     #modo temporaneo per chiudere il gioco
-    if keys[pygame.K_ESCAPE]:
+    if utility.keys[pygame.K_ESCAPE]:
         running = False
 
     pygame.display.flip()

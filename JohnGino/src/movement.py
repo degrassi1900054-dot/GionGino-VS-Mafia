@@ -5,7 +5,7 @@ import levelLoader
 from terrainMan import * 
 import terrainMan
 from charMan import *
-
+import enemyMan
 pygame.init()
 loadLevel("test")
 
@@ -16,6 +16,7 @@ clock = pygame.time.Clock()
 
 # Posizione del giocatore nel mondo (coordinate mondo)
 GroundY = find_ground_y(charMan.player.player_pos.x,  charMan.player.player_pos.y)
+enemyMan.testEnemy.enemyRect = pygame.Rect(600, GroundY - 30, 50, 50)
 player.player_pos.y = GroundY
 # Offset della telecamera: il personaggio appare a 1/4 dallo schermo sinistro
 CAMERA_OFFSET_X = SCREEN_WIDTH // 4  # ~320px dal bordo sinistro
@@ -67,6 +68,11 @@ def fall():
             charMan.player.GravityForce = charMan.player.MinGravityForce
 
 def movementInHandler(keys):
+    if charMan.player.isWallClimbing:
+        charMan.player.speed = charMan.player.baseSpeed
+        charMan.player.playerJumping = False
+        return
+
     if isinstance(charMan.player.playerClass[1], knifeClass):
         if charMan.player.playerClass[1].grapple['state'] == 'attached':
             if keys[pygame.K_SPACE]:

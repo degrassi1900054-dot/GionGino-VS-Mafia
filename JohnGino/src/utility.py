@@ -12,8 +12,18 @@ GamePath = str(Path(os.path.dirname(__file__)).parent.absolute())
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+keys = pygame.key.get_pressed()
 running = True   
 dt = 0
+halfW = 0.0
+halfH = 0.0
+
+def coolingDown(cooldown):
+    global dt
+    if cooldown > 0:
+        cooldown -= dt
+
+
 def setDt(delta):
     global dt
     dt = delta

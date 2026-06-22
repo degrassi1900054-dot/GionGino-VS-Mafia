@@ -1,5 +1,6 @@
 from pygame.rect import Rect
 from utility import *
+import utility
 import levelLoader
 import charMan
 # --- Sfondo a scorrimento orizzontale ---
@@ -30,7 +31,6 @@ for obj in levelLoader.tmx_data.objects:
             wall_rects.append(r)
 
 def find_ground_y(px, py):
-    """Trova la superficie di atterraggio più vicina sotto al giocatore."""
     player_feet = py + SPRITE_H / 2  # bordo inferiore dello sprite
     best_y = WORLD_H  # fallback: fondo del mondo
     for rect in ground_rects:
@@ -43,38 +43,60 @@ def find_ground_y(px, py):
     # Converti dalla posizione piedi alla posizione centro sprite
     return int((best_y - SPRITE_H / 2) / 10) * 10
 
-def collisionWalls(keys, half_w):
+def collisionWalls():
     for wall in wall_rects:
-        if charMan.player.player_rect.colliderect(wall): #pyright: ignore
-            # Spingi il giocatore fuori dal muro (risoluzione orizzontale)
-            if keys[pygame.K_d]:  # stava andando a destra
-                charMan.player.player_pos.x = wall.left - half_w
-            elif keys[pygame.K_a]:  # stava andando a sinistra
-                charMan.player.player_pos.x = wall.right + half_w
+        if charMan.player.player_rect.colliderect(wall) or charMan.player.climbingRect.colliderect(wall): #pyright: ignore 
+            if charMan.player.wallClimbEnabler:
+                if charMan.player.direction == "right":  # stava andando a destra
+                    charMan.player.player_pos.x = wall.left - utility.halfW
+                    charMan.player.touchingWall = True 
+                    break
+                elif charMan.player.direction == "left":  # stava andando a sinistra
+                    charMan.player.player_pos.x = wall.right + utility.halfW
+                    charMan.player.touchingWall = True
+                    break
+            else:
+                if utility.keys[pygame.K_d]:  # stava andando a destra
+                    charMan.player.player_pos.x = wall.left - utility.halfW
+                    charMan.player.touchingWall = True 
+                    break
+                elif utility.keys[pygame.K_a]:  # stava andando a sinistra
+                    charMan.player.player_pos.x = wall.right + utility.halfW
+                    charMan.player.touchingWall = True
+                    break
 
-def collisionGroundBottom(keys): # jumpF = JumpForce, jumpD = JumpDuration 
+        else:
+            charMan.player.touchingWall = False
+def collisionGroundBottom(): # jumpF = JumpForce, jumpD = JumpDuration 
     for ground in ground_rects:
-        if charMan.player.player_rect.colliderect(ground):
-            if keys[pygame.K_SPACE] and isCloseInt(charMan.player.player_rect.top, ground.bottom, 20):
+        if charMan.player.player_rect.colliderect(ground): #pyright: ignore
+            if utility.keys[pygame.K_SPACE] and isCloseInt(charMan.player.player_rect.top, ground.bottom, 20): #pyright: ignore
+                charMan.player.player_pos.y = ground.bottom + utility.halfH
                 charMan.player.JumpDuration = 0
                 charMan.player.JumpForce = 0
                 charMan.player.Falling = True
+            elif (utility.keys[pygame.K_a] or utility.keys[pygame.K_d]) and charMan.player.wallClimbEnabler and isCloseInt(charMan.player.player_rect.top, ground.bottom, 20):
+                charMan.player.player_pos.y = ground.bottom + utility.halfH
+                charMan.player.mayBonkHead = True
+                charMan.player.possibleBonkingRect = ground
+                
 
     
 #fixed
-def collisonGroundSide(keys, half_w):
+def collisonGroundSide():
     for ground in ground_rects:
-        if charMan.player.player_rect.colliderect(ground):
-            if keys[pygame.K_d] and isCloseInt(charMan.player.player_rect.right, ground.left, 10):
-                charMan.player.player_pos.x = ground.left - half_w
-            elif keys[pygame.K_a] and isCloseInt(charMan.player.player_rect.left, ground.right, 10):  # stava andando a sinistra
-                charMan.player.player_pos.x = ground.right + half_w
+        if charMan.player.player_rect.colliderect(ground): #pyright: ignore
+            if utility.keys[pygame.K_d] and isCloseInt(charMan.player.player_rect.right, ground.left, 10): #pyright: ignore
+                charMan.player.player_pos.x = ground.left - utility.halfW
+            elif utility.keys[pygame.K_a] and isCloseInt(charMan.player.player_rect.left, ground.right, 10): #pyright: ignore
+                charMan.player.player_pos.x = ground.right + utility.halfW
 
 #eventi triggerati esclusivamente su inizio collisione
-def onCollisionEnter(keys):
-    collisionGroundBottom(keys)
+def onCollisionEnter():
+    collisionGroundBottom()
 
 #eventi triggerati su intera durata della collisione
-def onCollisionStay(keys, half_w):
-    collisionWalls(keys, half_w)
-    collisonGroundSide(keys, half_w)
+def onCollisionStay():
+    collisionWalls()
+    collisonGroundSide()
+

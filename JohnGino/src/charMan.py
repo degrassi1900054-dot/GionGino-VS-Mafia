@@ -1,5 +1,7 @@
 from logging import NullHandler
 from os import name
+
+from pygame.mixer_music import play
 from utility import *
 import utility
 import enemyMan
@@ -42,17 +44,98 @@ class umbrellaClass(weaponClass):
         print("umbrella")
 
 class knuckleClass(weaponClass):
+    melee = {
+        "hitboxes" : [],
+        "rangeX" : 35,
+        "rangeY" : 50,
+        "duration" : 0.2,
+        "offsetX" : 15
+    }    
     def __init__(self, baseCooldown) -> None:
         super().__init__()
         self.baseCooldown = baseCooldown
     
     def primaryShot(self):
         super().primaryShot()
-        print("knuckle")
+        if player.direction == "right":
+            hitbox_x = player.player_pos.x + self.melee["offsetX"]
+        else:
+            hitbox_x = player.player_pos.x - self.melee["offsetX"] - self.melee["rangeX"]
+        
+        hitbox_y = player.player_pos.y - self.melee["rangeY"] / 2
+        
+        new_hitbox = pygame.Rect(hitbox_x, hitbox_y, self.melee["rangeX"], self.melee["rangeY"])
+        self.melee["hitboxes"].append({'rect': new_hitbox, 'timer': self.melee["duration"]})
+        
 
     def secondaryShot(self):
         super().secondaryShot()
-        print("knucle")
+        print(player.touchingWall)
+        player.wallClimbEnabler = not player.wallClimbEnabler and player.touchingWall
+        player.onGround = False
+    
+    def shotHitbox(self):
+        super().shotHitbox()
+        for hb in self.melee["hitboxes"][:]:
+            hb['timer'] -= utility.dt
+            if hb['timer'] <= 0:
+                self.melee["hitboxes"].remove(hb)
+            else:
+                # Controllo collisione
+                if hb['rect'].colliderect(enemyMan.testEnemy.enemyRect):
+                    enemyMan.testEnemy.state["hitTimer"] = enemyMan.testEnemy.state["hitDuration"]
+
+    def shotRender(self):
+        super().shotRender()
+        for hb in self.melee["hitboxes"]:
+            hb_surf = pygame.Surface((hb['rect'].width, hb['rect'].height), pygame.SRCALPHA)
+            pygame.draw.rect(hb_surf, (255, 0, 0, 100), hb_surf.get_rect()) # Rosso semi-trasparente
+            screen.blit(hb_surf, (hb['rect'].x, hb['rect'].y))
+            pygame.draw.rect(screen, (255, 0, 0), hb['rect'], 2) # Contorno rosso acceso
+
+
+    def climbing(self):
+        if player.isWallClimbing:
+            player.Falling = False
+            player.playerJumping = False
+            player.GravityForce = player.MinGravityForce
+            player.JumpDuration = -1
+            if player.direction == "right":
+                player.player_pos.x += player.speed * utility.dt
+                if utility.keys[pygame.K_d]: #pyright: ignore
+                    player.player_pos.y -= player.wallClimbSpeed * utility.dt
+                elif utility.keys[pygame.K_a]:#pyright: ignore
+                    player.player_pos.y += player.wallClimbSpeed * utility.dt
+                    player.mayBonkHead = False
+                    player.possibleBonkingRect = pygame.Rect(0, 0, 0, 0)
+            elif player.direction == "left":
+                player.player_pos.x -= player.speed * utility.dt
+                if utility.keys[pygame.K_a]: #pyright: ignore
+                    player.player_pos.y -= player.wallClimbSpeed * utility.dt
+                elif utility.keys[pygame.K_d]: #pyright: ignore
+                    player.player_pos.y += player.wallClimbSpeed * utility.dt
+                    player.mayBonkHead = False
+                    player.possibleBonkingRect = pygame.Rect(0, 0, 0, 0)
+            if utility.keys[pygame.K_SPACE]: #pyright: ignore
+                if not player.mayBonkHead:
+                    player.playerJumping = True
+                    player.JumpDuration = player.MaxJumpDuration
+                    player.JumpForce = player.MaxJumpForce
+                    player.Falling = False
+                    player.momentumX = 500 if player.direction == "right" else -500
+                    player.touchingWall = False
+                    player.isWallClimbing = False
+                    player.wallClimbEnabler = False
+                else:
+                    player.player_pos.y = player.possibleBonkingRect.bottom + utility.halfH
+                    player.JumpDuration = 0
+                    player.JumpForce = 0
+                    player.Falling = True
+                    player.touchingWall = False
+                    player.isWallClimbing = False
+                    player.wallClimbEnabler = False
+                    
+                    
 
         
 
@@ -193,7 +276,7 @@ class knifeClass(weaponClass):
             else:
                 player.player_pos.x += (dir_x / dist) * pull_speed * utility.dt
                 player.player_pos.y += (dir_y / dist) * pull_speed * utility.dt
-        
+
     def grappleAtteched(self):
         player.player_pos.x = self.grapple['pos'].x
         player.player_pos.y = self.grapple['pos'].y + 20
@@ -394,6 +477,7 @@ class playerChar:
     name = ""
     playerClass = ("knife", knifeC)
     classes = [("knife", knifeC), ("shotgun", shotgunC), ("umbrella", umbrellaC), ("knuckles", (knucklesC))]
+    playerRadious = 20
     playerJumping = False
     onGround = True
     MaxJumpForce = 200
@@ -405,13 +489,32 @@ class playerChar:
     Falling = False
     baseSpeed = 300
     speed = baseSpeed
-    player_rect = NullHandler
+    player_rect = pygame.Rect(0, 0 , 0, 0)
     player_pos = pygame.Vector2(0, 0)
     direction = ""
     momentumX = 0.0
+    wallClimbEnabler = False
+    isWallClimbing = False
+    touchingWall = False
+    wallEnd = False
+    wallClimbSpeed = 200
+    mayBonkHead = False #stupid fucking name I know
+    possibleBonkingRect = pygame.Rect(0, 0, 0, 0)
+    climbingRect = pygame.Rect(0, 0 , 0, 0)
 
+    def updateClimRect(self):
+        self.climbingRect = pygame.Rect(self.player_rect.left - 10, self.player_rect.top, self.player_rect.width, self.player_rect.height)
+
+    def updateClimb(self):
+        if self.wallClimbEnabler:
+            self.isWallClimbing = self.touchingWall 
+            if not self.isWallClimbing:
+                self.player_pos.y -= 40 * dt
+                self.wallClimbEnabler = False
+        else:
+            self.isWallClimbing = False
+    
     def switchClassShortCut(self, keys):
-
         prevClass = self.playerClass
         if keys[pygame.K_1]:
             self.playerClass = self.classes[0]    
